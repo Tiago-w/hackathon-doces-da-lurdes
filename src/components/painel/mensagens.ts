@@ -6,6 +6,8 @@ import type {
   StatusPedido,
 } from '@/lib/contrato';
 import { diasEntre } from '@/lib/datas';
+import { mensagemStatusParaCliente } from '@/lib/mensagens';
+import { proximoStatus } from '@/lib/regras';
 import { linkWhatsapp } from '@/lib/whatsapp';
 
 export interface InfoProximoPasso {
@@ -15,40 +17,42 @@ export interface InfoProximoPasso {
 }
 
 export function obterProximoPasso(pedido: PedidoResumo): InfoProximoPasso | null {
+  const proximo = proximoStatus(pedido.status, pedido.formaEntrega);
+  if (!proximo) return null;
+
   switch (pedido.status) {
     case 'RECEBIDO':
       return {
-        proximoStatus: 'FAZENDO',
+        proximoStatus: proximo,
         rotuloBotao: 'Começar a fazer',
         icone: '👩‍🍳',
       };
     case 'FAZENDO':
       return {
-        proximoStatus: 'PRONTO',
+        proximoStatus: proximo,
         rotuloBotao: 'Está pronto',
         icone: '✅',
       };
     case 'PRONTO':
       if (pedido.formaEntrega === 'RETIRADA') {
         return {
-          proximoStatus: 'ENTREGUE',
+          proximoStatus: proximo,
           rotuloBotao: 'Cliente retirou',
           icone: '🙌',
         };
       }
       return {
-        proximoStatus: 'SAIU',
+        proximoStatus: proximo,
         rotuloBotao: 'Saiu para entrega',
         icone: '🛵',
       };
     case 'SAIU':
       return {
-        proximoStatus: 'ENTREGUE',
+        proximoStatus: proximo,
         rotuloBotao: 'Entregue',
         icone: '🎉',
       };
-    case 'ENTREGUE':
-    case 'CANCELADO':
+    default:
       return null;
   }
 }
@@ -136,26 +140,7 @@ export function primeiroNome(nomeCompleto: string): string {
 }
 
 export function montarMensagemWhatsappPedido(pedido: PedidoResumo): string {
-  const nome = primeiroNome(pedido.cliente.nome);
-  const num = pedido.codigo;
-
-  switch (pedido.status) {
-    case 'RECEBIDO':
-      return `Oi ${nome}! Aqui é da Doces da Lurdes 🍬 Recebemos o seu pedido ${num} e já vamos separar tudo com carinho!`;
-    case 'FAZENDO':
-      return `Oi ${nome}! Estamos preparando os doces do seu pedido ${num} da Doces da Lurdes 😊`;
-    case 'PRONTO':
-      if (pedido.formaEntrega === 'RETIRADA') {
-        return `Oi ${nome}! Seu pedido ${num} da Doces da Lurdes está pronto para retirada 😊`;
-      }
-      return `Oi ${nome}! Seu pedido ${num} da Doces da Lurdes está pronto 😊`;
-    case 'SAIU':
-      return `Oi ${nome}! Seu pedido ${num} da Doces da Lurdes acabou de sair para entrega 🛵🍬`;
-    case 'ENTREGUE':
-      return `Oi ${nome}! Espero que tenha gostado dos doces do pedido ${num} da Doces da Lurdes 😊 Muito obrigada!`;
-    case 'CANCELADO':
-      return `Oi ${nome}! Aqui é da Doces da Lurdes, falando sobre o pedido ${num}.`;
-  }
+  return mensagemStatusParaCliente(pedido.status, pedido);
 }
 
 export function linkWhatsappPedido(pedido: PedidoResumo): string {

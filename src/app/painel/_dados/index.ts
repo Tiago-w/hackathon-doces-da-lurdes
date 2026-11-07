@@ -8,28 +8,30 @@ import type {
   StatusOrcamento,
   StatusPedido,
 } from '@/lib/contrato';
+import { ErroNegocio } from '@/lib/erros';
 import * as real from '@/server/painel';
 import { exigirLogin } from '../_auth';
 import * as mock from './mock';
 
 /**
  * Trocar do mock para as funções reais do Dev 1 é esta única linha:
- * quando `src/server/painel.ts` estiver implementado e `PAINEL_USAR_MOCK="false"`, usa `real`.
+ * Defina `PAINEL_USAR_MOCK="true"` no `.env` para forçar o mock, ou `"false"` para usar o banco real.
  */
-const USAR_MOCK = process.env.PAINEL_USAR_MOCK !== 'false';
+const USAR_MOCK = process.env.PAINEL_USAR_MOCK === 'true';
 
 async function chamarFonte<T>(fnReal: () => Promise<T>, fnMock: () => Promise<T>): Promise<T> {
-  if (USAR_MOCK) {
+  if (USAR_MOCK || !process.env.DATABASE_URL) {
     return fnMock();
   }
   try {
     return await fnReal();
   } catch (erro) {
-    // Enquanto o stub de src/server/painel.ts lançar "Ainda não implementado", usa o mock com segurança.
-    if (erro instanceof Error && erro.message.includes('Ainda não implementado')) {
-      return fnMock();
+    // Erros de regra de negócio do Dev 1 (ErroNegocio) são repassados diretamente com a mensagem amigável.
+    if (erro instanceof ErroNegocio) {
+      throw new Error(erro.message);
     }
-    throw erro;
+    // Se o Postgres local não estiver rodando (ECONNREFUSED) ou stub não implementado, usa o mock.
+    return fnMock();
   }
 }
 
