@@ -1,0 +1,26 @@
+# Banco local para desenvolvimento. Todos usam o mesmo, igualzinho.
+# Subir:  docker compose up -d
+# Parar:  docker compose down        (os dados ficam no volume)
+# Zerar:  docker compose down -v     (apaga tudo; depois rode npm run db:reset)
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: doces-lurdes-db
+    environment:
+      POSTGRES_USER: lurdes
+      POSTGRES_PASSWORD: lurdes
+      POSTGRES_DB: doces_lurdes
+      TZ: America/Sao_Paulo
+    ports:
+      # 5433 no seu computador, para não brigar com um Postgres que você já tenha na 5432.
+      - "5433:5432"
+    volumes:
+      - dados-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lurdes -d doces_lurdes"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  dados-postgres:
