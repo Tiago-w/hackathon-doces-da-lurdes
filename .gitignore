@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Pacotes zip trocados entre a equipe (não vão para o repositório)
+/*.zip
