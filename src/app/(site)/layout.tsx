@@ -1,7 +1,18 @@
+import type { Metadata } from 'next';
 import { obterConfigPublica } from './_dados';
 import { Cabecalho } from '@/components/site/Cabecalho';
 import { Rodape } from '@/components/site/Rodape';
 import { CarrinhoProvider } from '@/components/site/carrinho';
+
+export const metadata: Metadata = {
+  openGraph: {
+    type: 'website',
+    locale: 'pt_BR',
+    siteName: 'Doces da Lurdes',
+    title: 'Doces da Lurdes · Doces de Pelotas feitos em casa',
+    description: 'Doces tradicionais de Pelotas feitos em casa há 18 anos. Caixa de 50 com sabores à escolha, avulsos e festas.',
+  },
+};
 
 // Disponibilidade dos sabores muda ao longo do dia (painel da dona Lurdes): sempre renderiza na hora.
 export const dynamic = 'force-dynamic';
