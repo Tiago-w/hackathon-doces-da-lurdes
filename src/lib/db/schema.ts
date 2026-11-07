@@ -168,3 +168,12 @@ export const config = pgTable('config', {
   pixCidade: text('pix_cidade').notNull(),
   atualizadoEm: atualizadoEm(),
 });
+
+/** Regras e exceções por dia do calendário editadas pela dona Lurdes no Modo Vovó. */
+export const agendaDias = pgTable('agenda_dias', {
+  data: date('data', { mode: 'string' }).primaryKey(),
+  aberto: boolean('aberto').notNull().default(true),
+  limiteCaixas: integer('limite_caixas'),
+  observacao: text('observacao'),
+  atualizadoEm: atualizadoEm(),
+});

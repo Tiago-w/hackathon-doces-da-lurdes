@@ -15,6 +15,7 @@ import { z } from 'zod';
 import type {
   Bairro,
   ConfigPublica,
+  DiaCalendario,
   EntradaOrcamentoFesta,
   EntradaPedido,
   PedidoConfirmacao,
@@ -27,7 +28,7 @@ import { db, schema as s } from '@/lib/db';
 import { ehUuid } from '@/lib/erros';
 import { gerarPixCopiaECola } from '@/lib/pix';
 import { avaliarOrcamentoFesta, avaliarPedido } from '@/lib/regras';
-import { carregarConfig, carregarContexto } from './contexto';
+import { carregarConfig, carregarContexto, construirCalendario } from './contexto';
 
 const ERRO_FORMATO = {
   mensagem: 'Não conseguimos entender o pedido. Recarregue a página e tente de novo.',
@@ -102,6 +103,10 @@ export async function obterConfigPublica(): Promise<ConfigPublica> {
     enderecoRetirada: c.enderecoRetirada,
     ambienteTeste: process.env.PIX_AMBIENTE_TESTE !== 'false',
   };
+}
+
+export async function listarCalendario(): Promise<DiaCalendario[]> {
+  return construirCalendario(db);
 }
 
 // ---------- Pedido ----------

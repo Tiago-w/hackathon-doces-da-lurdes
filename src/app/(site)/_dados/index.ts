@@ -10,6 +10,7 @@
 import type {
   Bairro,
   ConfigPublica,
+  DiaCalendario,
   EntradaOrcamentoFesta,
   EntradaPedido,
   PedidoConfirmacao,
@@ -33,6 +34,10 @@ export async function listarBairros(): Promise<Bairro[]> {
 
 export async function obterConfigPublica(): Promise<ConfigPublica> {
   return fonte.obterConfigPublica();
+}
+
+export async function listarCalendario(): Promise<DiaCalendario[]> {
+  return fonte.listarCalendario();
 }
 
 export async function calcularPedido(entrada: Partial<EntradaPedido>): Promise<ResultadoCalculo> {

@@ -183,6 +183,38 @@ export interface OrcamentoFesta {
   status: StatusOrcamento;
 }
 
+// ---------- Calendário de Agenda (Site & Modo Vovó) ----------
+
+export interface DiaCalendario {
+  data: DataISO;
+  /** Se false, a dona Lurdes fechou a cozinha neste dia (folga, feriado ou evento). */
+  aberto: boolean;
+  /** Limite efetivo de Caixas de 50 neste dia. */
+  limiteCaixas: number;
+  /** true quando o limite deste dia foi ajustado manualmente pela dona Lurdes. */
+  limitePersonalizado: boolean;
+  /** Quantas Caixas de 50 já estão reservadas neste dia (pedidos ativos). */
+  caixasAgendadas: number;
+  /** Total de pedidos ativos (avulsos + caixas) agendados para este dia. */
+  totalPedidos: number;
+  /** Vagas restantes para Caixa de 50 neste dia. */
+  vagasCaixaRestantes: number;
+  /** Nota pública/interna do dia (ex.: "Folga da cozinha", "Feriado", "Produção de casamento"). */
+  observacao: string | null;
+  /** Se o dia aceita novos pedidos avulsos. */
+  disponivelAvulso: boolean;
+  /** Se o dia aceita novas Caixas de 50. */
+  disponivelCaixa: boolean;
+}
+
+export interface EntradaEditarDiaCalendario {
+  data: DataISO;
+  aberto: boolean;
+  /** null volta a usar o limite padrão da cozinha. */
+  limiteCaixas: number | null;
+  observacao: string | null;
+}
+
 // ---------- Constantes úteis para as telas ----------
 
 /** Ordem do fluxo normal de um pedido (CANCELADO fica de fora). */

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { acaoSair } from '@/app/painel/_acoes-auth';
 import {
+  editarDiaCalendario,
+  listarCalendario,
   listarCatalogo,
   listarOrcamentosFesta,
   listarPedidos,
@@ -13,6 +15,8 @@ import {
 } from '@/app/painel/_dados';
 import type {
   DataISO,
+  DiaCalendario,
+  EntradaEditarDiaCalendario,
   OrcamentoFesta,
   PedidoResumo,
   Produto,
@@ -21,6 +25,7 @@ import type {
 } from '@/lib/contrato';
 import { hojeEmPelotas, partesEmPelotas } from '@/lib/datas';
 import { formatarReais } from '@/lib/dinheiro';
+import { AbaCalendario, type DesfazerDiaCalendario } from './AbaCalendario';
 import { AbaFestas, type DesfazerStatusOrcamento } from './AbaFestas';
 import { AbaHoje } from './AbaHoje';
 import { AbaProximosDias } from './AbaProximosDias';
@@ -28,7 +33,7 @@ import { AbaSabores, type DesfazerDisponibilidadeSabor } from './AbaSabores';
 import type { DesfazerStatusPedido } from './CartaoPedido';
 import { desbloquearAudio, tocarPlimPlim } from './som';
 
-type AbaPainel = 'HOJE' | 'PROXIMOS' | 'FESTAS' | 'SABORES';
+type AbaPainel = 'HOJE' | 'PROXIMOS' | 'CALENDARIO' | 'FESTAS' | 'SABORES';
 
 const INTERVALO_POLLING_MS = 10_000;
 const INTERVALO_REPETIR_SOM_MS = 30_000;
@@ -38,6 +43,7 @@ interface PropriedadesPainelModoVovo {
   pedidosIniciais: PedidoResumo[];
   catalogoInicial: Produto[];
   orcamentosIniciais: OrcamentoFesta[];
+  calendarioInicial?: DiaCalendario[];
   hojeInicial: DataISO;
   horaInicial: string;
 }
@@ -46,6 +52,7 @@ export function PainelModoVovo({
   pedidosIniciais,
   catalogoInicial,
   orcamentosIniciais,
+  calendarioInicial = [],
   hojeInicial,
   horaInicial,
 }: PropriedadesPainelModoVovo) {
@@ -61,6 +68,9 @@ export function PainelModoVovo({
   const [pedidos, setPedidos] = useState<PedidoResumo[]>(pedidosIniciais);
   const [catalogo, setCatalogo] = useState<Produto[]>(catalogoInicial);
   const [orcamentos, setOrcamentos] = useState<OrcamentoFesta[]>(orcamentosIniciais);
+  const [calendario, setCalendario] = useState<DiaCalendario[]>(calendarioInicial);
+  const [desfazerCalendario, setDesfazerCalendario] = useState<DesfazerDiaCalendario | null>(null);
+  const [mensagemCalendario, setMensagemCalendario] = useState<string | null>(null);
 
   // Pedidos em RECEBIDO que ainda não foram tocados/vistos pela dona Lurdes
   const [idsNaoVistos, setIdsNaoVistos] = useState<Set<string>>(() => {
@@ -118,10 +128,11 @@ export function PainelModoVovo({
     }
 
     try {
-      const [novosPedidos, novoCatalogo, novosOrcamentos] = await Promise.all([
+      const [novosPedidos, novoCatalogo, novosOrcamentos, novoCalendario] = await Promise.all([
         listarPedidos(),
         listarCatalogo(),
         listarOrcamentosFesta(),
+        listarCalendario(),
       ]);
 
       const agoraPelotas = partesEmPelotas(new Date());
@@ -171,6 +182,7 @@ export function PainelModoVovo({
       setPedidos(novosPedidos);
       setCatalogo(novoCatalogo);
       setOrcamentos(novosOrcamentos);
+      setCalendario(novoCalendario);
     } catch {
       setSemInternet(true);
     }
@@ -508,6 +520,84 @@ export function PainelModoVovo({
     }
   }
 
+  async function lidarEditarDiaCalendario(
+    diaAtual: DiaCalendario,
+    novaEntrada: EntradaEditarDiaCalendario,
+    descricao: string,
+  ) {
+    setErroAcao(null);
+    const estadoAnterior: EntradaEditarDiaCalendario = {
+      data: diaAtual.data,
+      aberto: diaAtual.aberto,
+      limiteCaixas: diaAtual.limitePersonalizado ? diaAtual.limiteCaixas : null,
+      observacao: diaAtual.observacao,
+    };
+
+    // Atualização otimista imediata no calendário
+    setCalendario((lista) =>
+      lista.map((d) => {
+        if (d.data !== novaEntrada.data) return d;
+        const novoLimite =
+          typeof novaEntrada.limiteCaixas === 'number' ? novaEntrada.limiteCaixas : d.limiteCaixas;
+        return {
+          ...d,
+          aberto: novaEntrada.aberto,
+          limiteCaixas: novoLimite,
+          limitePersonalizado: typeof novaEntrada.limiteCaixas === 'number',
+          vagasCaixaRestantes: !novaEntrada.aberto ? 0 : Math.max(0, novoLimite - d.caixasAgendadas),
+          observacao: novaEntrada.observacao,
+          disponivelAvulso: novaEntrada.aberto,
+          disponivelCaixa: novaEntrada.aberto && d.caixasAgendadas < novoLimite,
+        };
+      }),
+    );
+
+    const registroDesfazer: DesfazerDiaCalendario = {
+      data: diaAtual.data,
+      estadoAnterior,
+      descricaoAcao: descricao,
+    };
+    setDesfazerCalendario(registroDesfazer);
+    setMensagemCalendario(`Pronto! Você ${descricao}.`);
+
+    agendarLimpezaDesfazer('cal-desfazer', () => {
+      setDesfazerCalendario(null);
+      setMensagemCalendario(null);
+    });
+
+    marcarSalvando(diaAtual.data, true);
+    try {
+      await editarDiaCalendario(novaEntrada);
+      const atualizado = await listarCalendario();
+      setCalendario(atualizado);
+      setAtualizadoAs(partesEmPelotas(new Date()).hora);
+    } catch {
+      const atualizado = await listarCalendario().catch(() => calendario);
+      setCalendario(atualizado);
+      setErroAcao('Não consegui salvar a mudança no calendário. Tente de novo.');
+    } finally {
+      marcarSalvando(diaAtual.data, false);
+    }
+  }
+
+  async function lidarDesfazerCalendario(desfazer: DesfazerDiaCalendario) {
+    setErroAcao(null);
+    setDesfazerCalendario(null);
+    setMensagemCalendario('Alteração desfeita no calendário.');
+
+    marcarSalvando(desfazer.data, true);
+    try {
+      await editarDiaCalendario(desfazer.estadoAnterior);
+      const atualizado = await listarCalendario();
+      setCalendario(atualizado);
+      setAtualizadoAs(partesEmPelotas(new Date()).hora);
+    } catch {
+      setErroAcao('Não consegui desfazer agora. Tente de novo.');
+    } finally {
+      marcarSalvando(desfazer.data, false);
+    }
+  }
+
   // Separação de pedidos de Hoje e Próximos dias
   const dataBase = hoje || hojeEmPelotas();
   const pedidosHoje = pedidos.filter((p) => p.dataEntrega === dataBase);
@@ -620,16 +710,16 @@ export function PainelModoVovo({
           </div>
         </div>
 
-        {/* Abas Grandes de Navegação: Hoje · Próximos dias · Festas · Sabores */}
+        {/* Abas Grandes de Navegação: Hoje · Próximos dias · Calendário · Festas · Sabores */}
         <nav
           aria-label="Seções do painel"
-          className="max-w-6xl mx-auto mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3"
+          className="max-w-6xl mx-auto mt-4 grid grid-cols-2 lg:grid-cols-5 gap-3"
         >
           <button
             type="button"
             onClick={() => setAbaAtiva('HOJE')}
             aria-current={abaAtiva === 'HOJE' ? 'page' : undefined}
-            className={`min-h-[64px] px-4 py-3 rounded-2xl text-[21px] sm:text-[23px] font-extrabold flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
+            className={`min-h-[64px] px-4 py-3 rounded-2xl text-[21px] sm:text-[22px] font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
               abaAtiva === 'HOJE'
                 ? 'bg-caramelo text-papel shadow-sm border-2 border-caramelo-escuro'
                 : 'bg-creme text-chocolate border-2 border-borda hover:border-caramelo/50'
@@ -637,7 +727,7 @@ export function PainelModoVovo({
           >
             <span>Hoje</span>
             <span
-              className={`px-3 py-0.5 rounded-full text-[19px] font-extrabold ${
+              className={`px-3 py-0.5 rounded-full text-[18px] font-extrabold ${
                 abaAtiva === 'HOJE'
                   ? 'bg-papel text-caramelo'
                   : 'bg-doce-de-leite text-chocolate'
@@ -651,7 +741,7 @@ export function PainelModoVovo({
             type="button"
             onClick={() => setAbaAtiva('PROXIMOS')}
             aria-current={abaAtiva === 'PROXIMOS' ? 'page' : undefined}
-            className={`min-h-[64px] px-4 py-3 rounded-2xl text-[21px] sm:text-[23px] font-extrabold flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
+            className={`min-h-[64px] px-4 py-3 rounded-2xl text-[21px] sm:text-[22px] font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
               abaAtiva === 'PROXIMOS'
                 ? 'bg-caramelo text-papel shadow-sm border-2 border-caramelo-escuro'
                 : 'bg-creme text-chocolate border-2 border-borda hover:border-caramelo/50'
@@ -659,7 +749,7 @@ export function PainelModoVovo({
           >
             <span>Próximos dias</span>
             <span
-              className={`px-3 py-0.5 rounded-full text-[19px] font-extrabold ${
+              className={`px-3 py-0.5 rounded-full text-[18px] font-extrabold ${
                 abaAtiva === 'PROXIMOS'
                   ? 'bg-papel text-caramelo'
                   : 'bg-doce-de-leite/60 text-chocolate'
@@ -671,9 +761,31 @@ export function PainelModoVovo({
 
           <button
             type="button"
+            onClick={() => setAbaAtiva('CALENDARIO')}
+            aria-current={abaAtiva === 'CALENDARIO' ? 'page' : undefined}
+            className={`min-h-[64px] px-4 py-3 rounded-2xl text-[21px] sm:text-[22px] font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              abaAtiva === 'CALENDARIO'
+                ? 'bg-caramelo text-papel shadow-sm border-2 border-caramelo-escuro'
+                : 'bg-creme text-chocolate border-2 border-borda hover:border-caramelo/50'
+            }`}
+          >
+            <span>Calendário</span>
+            <span
+              className={`px-3 py-0.5 rounded-full text-[18px] font-extrabold ${
+                abaAtiva === 'CALENDARIO'
+                  ? 'bg-papel text-caramelo'
+                  : 'bg-doce-de-leite/60 text-chocolate'
+              }`}
+            >
+              30d
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setAbaAtiva('FESTAS')}
             aria-current={abaAtiva === 'FESTAS' ? 'page' : undefined}
-            className={`min-h-[64px] px-4 py-3 rounded-2xl text-[21px] sm:text-[23px] font-extrabold flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
+            className={`min-h-[64px] px-4 py-3 rounded-2xl text-[21px] sm:text-[22px] font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
               abaAtiva === 'FESTAS'
                 ? 'bg-caramelo text-papel shadow-sm border-2 border-caramelo-escuro'
                 : 'bg-creme text-chocolate border-2 border-borda hover:border-caramelo/50'
@@ -682,7 +794,7 @@ export function PainelModoVovo({
             <span>Festas</span>
             {qtdFestasNovas > 0 && (
               <span
-                className={`px-3 py-0.5 rounded-full text-[19px] font-extrabold ${
+                className={`px-3 py-0.5 rounded-full text-[18px] font-extrabold ${
                   abaAtiva === 'FESTAS'
                     ? 'bg-papel text-caramelo'
                     : 'bg-alerta-fundo text-alerta border border-alerta'
@@ -697,7 +809,7 @@ export function PainelModoVovo({
             type="button"
             onClick={() => setAbaAtiva('SABORES')}
             aria-current={abaAtiva === 'SABORES' ? 'page' : undefined}
-            className={`min-h-[64px] px-4 py-3 rounded-2xl text-[21px] sm:text-[23px] font-extrabold flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
+            className={`min-h-[64px] px-4 py-3 rounded-2xl text-[21px] sm:text-[22px] font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
               abaAtiva === 'SABORES'
                 ? 'bg-caramelo text-papel shadow-sm border-2 border-caramelo-escuro'
                 : 'bg-creme text-chocolate border-2 border-borda hover:border-caramelo/50'
@@ -706,7 +818,7 @@ export function PainelModoVovo({
             <span>Sabores</span>
             {qtdSaboresAcabaram > 0 && (
               <span
-                className={`px-3 py-0.5 rounded-full text-[18px] font-extrabold ${
+                className={`px-3 py-0.5 rounded-full text-[17px] font-extrabold ${
                   abaAtiva === 'SABORES'
                     ? 'bg-papel text-erro'
                     : 'bg-erro text-papel'
@@ -788,6 +900,20 @@ export function PainelModoVovo({
             aoMarcarVisto={marcarPedidoVisto}
             aoMudarStatus={(p, s) => void lidarMudarStatusPedido(p, s)}
             aoDesfazerStatus={(d) => void lidarDesfazerStatusPedido(d)}
+          />
+        )}
+
+        {abaAtiva === 'CALENDARIO' && (
+          <AbaCalendario
+            calendario={calendario}
+            hoje={dataBase}
+            desfazerAtivo={desfazerCalendario}
+            salvandoDatas={salvandoIds}
+            mensagemConfirmacao={mensagemCalendario}
+            aoEditarDia={(diaAtual, novaEntrada, descricao) =>
+              void lidarEditarDiaCalendario(diaAtual, novaEntrada, descricao)
+            }
+            aoDesfazerDia={(d) => void lidarDesfazerCalendario(d)}
           />
         )}
 

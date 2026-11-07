@@ -329,3 +329,38 @@ describe('preço', () => {
     expect(erroDePreco(500_000)).toContain('alto demais');
   });
 });
+
+describe('calendário editável pela dona Lurdes (agendaPersonalizada)', () => {
+  it('bloqueia datas fechadas pela dona Lurdes e exibe o motivo', () => {
+    const contexto = {
+      ...ctx(),
+      agendaPersonalizada: {
+        '2026-11-08': { aberto: false, limiteCaixas: null, observacao: 'Folga de domingo' },
+      },
+    };
+    const r = avaliarPedido(
+      { tipo: 'AVULSO', itens: [{ produtoId: 'quindim', quantidade: 4 }], dataEntrega: '2026-11-08' },
+      contexto,
+      'parcial',
+    );
+    expect(r.datasPermitidas.some((d) => d.data === '2026-11-08')).toBe(false);
+    expect(r.erros[0]?.mensagem).toContain('Folga de domingo');
+  });
+
+  it('respeita limite de Caixas de 50 personalizado para um dia específico', () => {
+    const contexto = {
+      ...ctx(),
+      caixasPorDia: { '2026-11-15': 3 },
+      agendaPersonalizada: {
+        '2026-11-15': { aberto: true, limiteCaixas: 3, observacao: 'Agenda reduzida' },
+      },
+    };
+    const r = avaliarPedido(
+      { tipo: 'CAIXA_50', itens: [{ produtoId: 'quindim', quantidade: 50 }], dataEntrega: '2026-11-15' },
+      contexto,
+      'parcial',
+    );
+    expect(r.datasPermitidas.some((d) => d.data === '2026-11-15')).toBe(false);
+    expect(r.erros[0]?.mensagem).toContain('agenda cheia');
+  });
+});

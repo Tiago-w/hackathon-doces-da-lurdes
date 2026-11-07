@@ -45,6 +45,12 @@ export interface BairroRegras {
   freteCentavos: number;
 }
 
+export interface RegraDiaCalendario {
+  aberto: boolean;
+  limiteCaixas: number | null;
+  observacao: string | null;
+}
+
 export interface ContextoPedido {
   config: ConfigRegras;
   /** Só produtos ativos. Indisponíveis entram (com disponivel=false) para a mensagem citar o nome. */
@@ -53,6 +59,8 @@ export interface ContextoPedido {
   bairros: ReadonlyMap<string, BairroRegras>;
   /** Caixas de 50 já marcadas por data de entrega (pedidos não cancelados). */
   caixasPorDia: Readonly<Record<DataISO, number>>;
+  /** Exceções do calendário configuradas pela dona Lurdes (dias fechados ou limites especiais). */
+  agendaPersonalizada?: Readonly<Record<DataISO, RegraDiaCalendario>>;
   /** Agora, no fuso de Pelotas. */
   agora: { data: DataISO; hora: string };
 }
@@ -192,16 +200,26 @@ export function mesmoDiaAberto(ctx: Pick<ContextoPedido, 'config' | 'agora'>): b
   return antesDoHorario(ctx.agora.hora, ctx.config.horarioCorteMesmoDia);
 }
 
-export function caixaLotada(data: DataISO, ctx: Pick<ContextoPedido, 'config' | 'caixasPorDia'>): boolean {
-  return (ctx.caixasPorDia[data] ?? 0) >= ctx.config.limiteCaixasPorDia;
+export function diaFechado(data: DataISO, ctx: Pick<ContextoPedido, 'agendaPersonalizada'>): boolean {
+  return ctx.agendaPersonalizada?.[data]?.aberto === false;
 }
 
-/** Datas que o cliente pode escolher, já sem os dias lotados (Caixa de 50). */
+export function limiteCaixasNoDia(data: DataISO, ctx: Pick<ContextoPedido, 'config' | 'agendaPersonalizada'>): number {
+  const personalizado = ctx.agendaPersonalizada?.[data]?.limiteCaixas;
+  return typeof personalizado === 'number' && personalizado >= 0 ? personalizado : ctx.config.limiteCaixasPorDia;
+}
+
+export function caixaLotada(data: DataISO, ctx: Pick<ContextoPedido, 'config' | 'caixasPorDia' | 'agendaPersonalizada'>): boolean {
+  return (ctx.caixasPorDia[data] ?? 0) >= limiteCaixasNoDia(data, ctx);
+}
+
+/** Datas que o cliente pode escolher, já sem os dias fechados ou lotados (Caixa de 50). */
 export function datasPermitidas(tipo: 'AVULSO' | 'CAIXA_50', ctx: ContextoPedido): DataPermitida[] {
   const inicio = primeiraDataPossivel(tipo, ctx);
   const datas: DataPermitida[] = [];
   for (let i = 0; i < JANELA_DIAS; i++) {
     const data = somarDias(inicio, i);
+    if (diaFechado(data, ctx)) continue;
     if (tipo === 'CAIXA_50' && caixaLotada(data, ctx)) continue;
     datas.push({ data, mesmoDia: data === ctx.agora.data });
   }
@@ -218,6 +236,16 @@ export function erroDeData(tipo: 'AVULSO' | 'CAIXA_50', data: string, ctx: Conte
 
   const { agora, config } = ctx;
   if (diasEntre(agora.data, data) < 0) return { campo, mensagem: 'Essa data já passou. Escolha outro dia.' };
+
+  if (diaFechado(data, ctx)) {
+    const obs = ctx.agendaPersonalizada?.[data]?.observacao;
+    return {
+      campo,
+      mensagem: obs
+        ? `A cozinha estará fechada neste dia (${obs}). Escolha outra data.`
+        : 'A cozinha não abre para entregas neste dia. Escolha outra data.',
+    };
+  }
 
   if (tipo === 'AVULSO' && data === agora.data) {
     return {

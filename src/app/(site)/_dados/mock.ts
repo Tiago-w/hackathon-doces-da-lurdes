@@ -14,6 +14,7 @@ import type {
   Bairro,
   ConfigPublica,
   DataPermitida,
+  DiaCalendario,
   EntradaOrcamentoFesta,
   EntradaPedido,
   ErroCampo,
@@ -261,6 +262,32 @@ export async function listarBairros(): Promise<Bairro[]> {
 
 export async function obterConfigPublica(): Promise<ConfigPublica> {
   return CONFIG;
+}
+
+export async function listarCalendario(): Promise<DiaCalendario[]> {
+  const { data: hoje, hora } = partesEmPelotas(agora());
+  const limitePadrao = 5;
+  const dias: DiaCalendario[] = [];
+  for (let i = 0; i < DIAS_NA_AGENDA; i++) {
+    const data = somarDias(hoje, i);
+    const lotado = DIAS_LOTADOS_CAIXA.includes(i);
+    const caixasAgendadas = lotado ? limitePadrao : i % 3 === 0 ? 2 : 0;
+    const disponivelAvulso = i > 0 || antesDoHorario(hora, CONFIG.horarioCorteMesmoDia);
+    const disponivelCaixa = i >= CONFIG.antecedenciaDiasCaixaFesta && !lotado;
+    dias.push({
+      data,
+      aberto: true,
+      limiteCaixas: limitePadrao,
+      limitePersonalizado: false,
+      caixasAgendadas,
+      totalPedidos: caixasAgendadas + (i < 4 ? 1 : 0),
+      vagasCaixaRestantes: Math.max(0, limitePadrao - caixasAgendadas),
+      observacao: null,
+      disponivelAvulso,
+      disponivelCaixa,
+    });
+  }
+  return dias;
 }
 
 export async function calcularPedido(entrada: Partial<EntradaPedido>): Promise<ResultadoCalculo> {

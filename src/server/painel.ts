@@ -12,6 +12,8 @@ import 'server-only';
  */
 import { and, asc, desc, eq, gte, inArray, lte, sql, type SQL } from 'drizzle-orm';
 import type {
+  DiaCalendario,
+  EntradaEditarDiaCalendario,
   FiltroPedidos,
   OrcamentoFesta,
   PedidoResumo,
@@ -22,6 +24,7 @@ import { db, schema as s } from '@/lib/db';
 import { ehDataISO } from '@/lib/datas';
 import { ErroNegocio, ehUuid } from '@/lib/erros';
 import { erroDePreco, mensagemTransicaoInvalida, transicaoPermitida } from '@/lib/regras';
+import { construirCalendario, garantirTabelaAgendaDias } from './contexto';
 
 export { listarCatalogo } from './loja';
 
@@ -185,4 +188,46 @@ export async function mudarStatusOrcamento(id: string, status: StatusOrcamento):
     .where(eq(s.orcamentosFesta.id, id))
     .returning({ id: s.orcamentosFesta.id });
   if (alterados.length === 0) throw new ErroNegocio('Não encontrei esse orçamento.');
+}
+
+// ---------- Calendário de Agenda (Modo Vovó) ----------
+
+export async function listarCalendario(): Promise<DiaCalendario[]> {
+  return construirCalendario(db);
+}
+
+export async function editarDiaCalendario(entrada: EntradaEditarDiaCalendario): Promise<void> {
+  if (!ehDataISO(entrada.data)) {
+    throw new ErroNegocio('Data do calendário inválida.');
+  }
+  if (typeof entrada.aberto !== 'boolean') {
+    throw new ErroNegocio('Escolha se o dia estará aberto ou fechado.');
+  }
+  if (
+    entrada.limiteCaixas !== null &&
+    (!Number.isInteger(entrada.limiteCaixas) || entrada.limiteCaixas < 0 || entrada.limiteCaixas > 100)
+  ) {
+    throw new ErroNegocio('O limite de Caixas de 50 deve ser um número entre 0 e 100.');
+  }
+  const observacao = entrada.observacao ? entrada.observacao.trim().slice(0, 140) || null : null;
+
+  await garantirTabelaAgendaDias(db);
+  await db
+    .insert(s.agendaDias)
+    .values({
+      data: entrada.data,
+      aberto: entrada.aberto,
+      limiteCaixas: entrada.limiteCaixas,
+      observacao,
+      atualizadoEm: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: s.agendaDias.data,
+      set: {
+        aberto: entrada.aberto,
+        limiteCaixas: entrada.limiteCaixas,
+        observacao,
+        atualizadoEm: new Date(),
+      },
+    });
 }

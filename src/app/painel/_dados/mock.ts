@@ -1,4 +1,7 @@
 import type {
+  DataISO,
+  DiaCalendario,
+  EntradaEditarDiaCalendario,
   FiltroPedidos,
   OrcamentoFesta,
   PedidoResumo,
@@ -6,7 +9,7 @@ import type {
   StatusOrcamento,
   StatusPedido,
 } from '@/lib/contrato';
-import { hojeEmPelotas, somarDias } from '@/lib/datas';
+import { diasEntre, hojeEmPelotas, somarDias } from '@/lib/datas';
 
 interface PedidoSimuladoTemplate {
   cliente: { nome: string; whatsapp: string };
@@ -24,6 +27,7 @@ interface EstadoMockPainel {
   catalogo: Produto[];
   pedidos: PedidoResumo[];
   orcamentos: OrcamentoFesta[];
+  agendaDias: Record<DataISO, { aberto: boolean; limiteCaixas: number | null; observacao: string | null }>;
   proximoCodigo: number;
   indiceSimulado: number;
   proximoSimuladoEmMs: number;
@@ -527,6 +531,7 @@ function criarEstadoInicial(): EstadoMockPainel {
     catalogo,
     pedidos,
     orcamentos,
+    agendaDias: {},
     proximoCodigo: 32,
     indiceSimulado: 0,
     // Primeiro pedido novo chega ~6s após a inicialização (aparece no primeiro ciclo de 10s),
@@ -669,4 +674,47 @@ export async function mudarStatusOrcamento(id: string, status: StatusOrcamento):
     throw new Error('Não encontrei esse orçamento de festa.');
   }
   orc.status = status;
+}
+
+export async function listarCalendario(): Promise<DiaCalendario[]> {
+  const estado = obterEstado();
+  const hoje = hojeEmPelotas();
+  const limitePadrao = 5;
+  const dias: DiaCalendario[] = [];
+
+  for (let i = 0; i < 30; i++) {
+    const data = somarDias(hoje, i);
+    const regra = estado.agendaDias[data];
+    const aberto = regra ? regra.aberto : true;
+    const limitePersonalizado = typeof regra?.limiteCaixas === 'number';
+    const limiteCaixas = limitePersonalizado ? (regra!.limiteCaixas as number) : limitePadrao;
+    const pedidosDia = estado.pedidos.filter((p) => p.dataEntrega === data && p.status !== 'CANCELADO');
+    const caixasAgendadas = pedidosDia.filter((p) => p.tipo === 'CAIXA_50').length;
+    const totalPedidos = pedidosDia.length;
+    const vagasCaixaRestantes = !aberto ? 0 : Math.max(0, limiteCaixas - caixasAgendadas);
+
+    dias.push({
+      data,
+      aberto,
+      limiteCaixas,
+      limitePersonalizado,
+      caixasAgendadas,
+      totalPedidos,
+      vagasCaixaRestantes,
+      observacao: regra?.observacao ?? null,
+      disponivelAvulso: aberto,
+      disponivelCaixa: aberto && diasEntre(hoje, data) >= 5 && caixasAgendadas < limiteCaixas,
+    });
+  }
+
+  return dias;
+}
+
+export async function editarDiaCalendario(entrada: EntradaEditarDiaCalendario): Promise<void> {
+  const estado = obterEstado();
+  estado.agendaDias[entrada.data] = {
+    aberto: entrada.aberto,
+    limiteCaixas: entrada.limiteCaixas,
+    observacao: entrada.observacao ? entrada.observacao.trim().slice(0, 140) || null : null,
+  };
 }

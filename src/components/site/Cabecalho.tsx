@@ -18,9 +18,12 @@ export function Cabecalho({ whatsappLoja }: { whatsappLoja: string }) {
 
   const links = [
     { href: '/#doces', rotulo: 'Cardápio' },
+    { href: '/#calendario', rotulo: 'Calendário' },
     { href: '/pedido/caixa', rotulo: 'Caixa de 50' },
     { href: '/pedido/avulso', rotulo: 'Avulsos (Hoje)' },
-    { href: '/pedido/festa', rotulo: 'Festas & Eventos' },
+    { href: '/pedido/festa', rotulo: 'Festas' },
+    { href: '/slides', rotulo: 'Slides' },
+    { href: '/painel', rotulo: 'Painel Vovó' },
   ];
 
   return (

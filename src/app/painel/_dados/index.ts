@@ -1,6 +1,8 @@
 'use server';
 
 import type {
+  DiaCalendario,
+  EntradaEditarDiaCalendario,
   FiltroPedidos,
   OrcamentoFesta,
   PedidoResumo,
@@ -91,5 +93,21 @@ export async function mudarStatusOrcamento(id: string, status: StatusOrcamento):
   return chamarFonte(
     (real) => real.mudarStatusOrcamento(id, status),
     () => mock.mudarStatusOrcamento(id, status),
+  );
+}
+
+export async function listarCalendario(): Promise<DiaCalendario[]> {
+  await exigirLogin();
+  return chamarFonte(
+    (real) => real.listarCalendario(),
+    () => mock.listarCalendario(),
+  );
+}
+
+export async function editarDiaCalendario(entrada: EntradaEditarDiaCalendario): Promise<void> {
+  await exigirLogin();
+  return chamarFonte(
+    (real) => real.editarDiaCalendario(entrada),
+    () => mock.editarDiaCalendario(entrada),
   );
 }

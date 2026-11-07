@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { listarBairros, listarCatalogo, obterConfigPublica } from './_dados';
+import { listarBairros, listarCalendario, listarCatalogo, obterConfigPublica } from './_dados';
 import type { Bairro } from '@/lib/contrato';
+import { hojeEmPelotas } from '@/lib/datas';
 import { formatarReais } from '@/lib/dinheiro';
 import { linkWhatsapp } from '@/lib/whatsapp';
+import { CalendarioPublico } from '@/components/site/CalendarioPublico';
 import { CartaoVitrine } from '@/components/site/CartaoVitrine';
 import { FotoSabor } from '@/components/site/FotoSabor';
 import { botaoPrincipal, botaoSecundario, botaoWhatsapp, cartao, selo, titulo } from '@/components/site/estilos';
@@ -29,7 +31,13 @@ function zonasDe(bairros: Bairro[]) {
 }
 
 export default async function Home() {
-  const [produtos, bairros, config] = await Promise.all([listarCatalogo(), listarBairros(), obterConfigPublica()]);
+  const [produtos, bairros, config, calendario] = await Promise.all([
+    listarCatalogo(),
+    listarBairros(),
+    obterConfigPublica(),
+    listarCalendario(),
+  ]);
+  const hoje = hojeEmPelotas();
   const zonas = zonasDe(bairros);
   const corte = config.horarioCorteMesmoDia.replace(':00', 'h');
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
@@ -247,6 +255,15 @@ export default async function Home() {
             </li>
           ))}
         </ul>
+      </section>
+
+      {/* Calendário Público de Encomendas & Vagas (30 dias) */}
+      <section id="calendario" aria-labelledby="titulo-calendario" className="mx-auto max-w-6xl scroll-mt-20 px-4 pt-16 sm:px-6">
+        <CalendarioPublico
+          calendario={calendario}
+          hoje={hoje}
+          antecedenciaDiasCaixa={config.antecedenciaDiasCaixaFesta}
+        />
       </section>
 
       {/* Como funciona */}
