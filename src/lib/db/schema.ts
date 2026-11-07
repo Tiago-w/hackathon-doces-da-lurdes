@@ -81,6 +81,8 @@ export const pedidos = pgTable(
     codigo: serial('codigo').notNull().unique(),
     tipo: tipoPedido('tipo').notNull(),
     status: statusPedido('status').notNull().default('RECEBIDO'),
+    /** Status antes da última mudança: permite o "Desfazer" do painel (inclusive de um cancelamento). */
+    statusAnterior: statusPedido('status_anterior'),
     statusAtualizadoEm: timestamp('status_atualizado_em', { withTimezone: true }).notNull().defaultNow(),
 
     clienteId: uuid('cliente_id')
