@@ -4,8 +4,7 @@ import { formatarReais } from '@/lib/dinheiro';
 import { FotoSabor } from './FotoSabor';
 import { IconeAlerta, IconeMais, IconeMenos } from './icones';
 import type { Quantidades } from './carrinho';
-
-export const AVISO_ESGOTADO = 'Acabou por hoje: falta ingrediente fresco';
+import { AVISO_ESGOTADO } from './textos';
 
 interface Props {
   produtos: Produto[];
