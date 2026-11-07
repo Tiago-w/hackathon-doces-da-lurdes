@@ -76,28 +76,49 @@ export default function PaginaSlides() {
     },
     {
       numero: '02',
-      etiqueta: 'Contexto & Problema',
-      titulo: 'O gargalo do atendimento manual no WhatsApp',
+      etiqueta: 'A Realidade Antes · Do Caderno à Nuvem',
+      titulo: 'Antes era tudo no caderno espiral e áudios de WhatsApp',
       subtitulo:
-        'Quando cada pedido exige dezenas de mensagens, a cozinha para de produzir doces para responder perguntas repetitivas.',
+        'A dona Lurdes anotava cada encomenda à mão na folha de papel: contas de cabeça, risco de perder pedidos e a cozinha parando para responder mensagem.',
       notaApresentador:
-        'Explique os 4 problemas reais: 1) Cliente não sabe o que tem disponível hoje; 2) Contar 50 doces sortidos no WhatsApp gera erro de soma; 3) Risco de aceitar mais caixas do que a cozinha dá conta no dia; 4) Sistemas tradicionais têm letras miúdas e dezenas de botões que atrapalham a dona Lurdes.',
+        'Destaque com ênfase a dor real: "Antes do nosso sistema, a dona Lurdes anotava TUDO num caderno espiral. Se entrasse 20 pedidos de festa, ela passava a tarde somando no lápis quantos quindins precisava enrolar, quem já tinha pago o Pix e qual motoboy ia levar. Era papel rabiscado, rasurado e o tacho esfriando." Mostre o salto de inovação!',
       conteudo: (
         <div className="grid gap-5 md:grid-cols-2">
           {[
             {
-              tag: 'Problema 01 · Atendimento',
-              titulo: 'Horas perdidas somando sabores no chat',
+              tag: 'Antes no Caderno ❌',
+              titulo: 'Soma manual de sabores na caneta',
               texto:
-                'Na Caixa de 50 doces, o cliente escolhe dezenas de combinações ("12 quindins, 8 camafeus, 15 ninhos..."). Conferir se a soma fecha em 50 e calcular o frete manualmente toma tempo da produção.',
+                'O cliente mandava áudio com 7 sabores picados. A dona Lurdes tinha que rabiscar no papel se fechava em 50, somar o frete na calculadora e torcer para não errar a conta.',
             },
             {
-              tag: 'Problema 02 · Estoque na Cozinha',
-              titulo: 'Conflito entre o que acabou e o que o cliente pede',
+              tag: 'Agora no Site ✅',
+              titulo: 'Montador interativo com trava em 50',
               texto:
-                'Quando um ingrediente acaba à tarde, o cliente não sabe e tenta pedir. Até a dona Lurdes avisar no WhatsApp, a venda já esfriou ou gerou frustração.',
+                'O cliente monta a caixa com contador ao vivo, atalhos inteligentes em 1 clique ("Sugestão Clássica") e cálculo automático de frete por bairro em Pelotas.',
             },
             {
+              tag: 'Antes no Caderno ❌',
+              titulo: 'Agenda rabiscada e risco de overbooking',
+              texto:
+                'Dias lotados eram marcados com "X" a lápis. Se dois clientes ligassem no mesmo dia, a cozinha aceitava mais caixas do que o forno suportava, atrasando entregas.',
+            },
+            {
+              tag: 'Agora no Site ✅',
+              titulo: 'Calendário de 30 dias com controle de vagas',
+              texto:
+                'A dona Lurdes fecha folgas ou ajusta limites com 1 toque no painel. O site bloqueia o checkout instantaneamente com proteção de concorrência no banco.',
+            },
+          ].map((item) => (
+            <div key={item.titulo} className={`rounded-2xl border p-6 ${item.tag.includes('Antes') ? 'border-borda bg-creme/30' : 'border-caramelo/50 bg-doce-de-leite/25'}`}>
+              <span className={`text-xs font-bold uppercase tracking-wider ${item.tag.includes('Antes') ? 'text-chocolate-suave' : 'text-caramelo'}`}>{item.tag}</span>
+              <h3 className="mt-2 font-titulo text-xl font-bold text-chocolate">{item.titulo}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-chocolate-suave sm:text-base">{item.texto}</p>
+            </div>
+          ))}
+        </div>
+      ),
+    },
               tag: 'Problema 03 · Capacidade Diária',
               titulo: 'Overbooking de Caixas de 50 e prazos',
               texto:
