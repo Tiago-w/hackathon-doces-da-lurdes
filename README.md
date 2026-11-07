@@ -31,7 +31,8 @@ Sem Docker? Use qualquer Postgres 16 e ajuste o `DATABASE_URL` no `.env`.
 |---|---|
 | `npm run dev` | Sobe o site em modo desenvolvimento |
 | `npm run verificar` | Typecheck + lint + testes. **Rode antes de abrir PR.** |
-| `npm test` | Testes (Vitest) |
+| `npm test` | Testes das regras (rápidos, sem banco) |
+| `npm run test:integracao` | Testa as funções do servidor contra um Postgres de verdade (cria e usa o banco `doces_lurdes_teste`, sem tocar nos seus dados) |
 | `npm run build` | Build de produção |
 | `npm run db:up` | Sobe o Postgres do `docker-compose.yml` |
 | `npm run db:setup` | Aplica as migrations e roda o seed |
@@ -71,9 +72,13 @@ Precisa de um campo no banco, uma função nova, uma biblioteca ou uma cor no te
 src/
   lib/
     contrato.ts        ← tipos combinados entre os três (a "fonte da verdade" das telas)
+    regras.ts          ← TODAS as regras de negócio (funções puras, testadas em regras.test.ts)
     datas.ts           ← datas/horas no fuso de Pelotas (use sempre; nunca new Date().getDate())
     dinheiro.ts        ← formatarReais(450) → "R$ 4,50"; lerReais("4,50") → 450
     whatsapp.ts        ← normalizar, validar, formatar e montar link wa.me
+    mensagens.ts       ← textos prontos de WhatsApp (resumo do pedido, aviso de status ao cliente)
+    pix.ts             ← Pix copia e cola no padrão BR Code do Banco Central
+    erros.ts           ← ErroNegocio + mensagemParaUsuario (para o _dados do painel)
     db/
       schema.ts        ← tabelas (Drizzle)
       index.ts         ← conexão (server-only)
@@ -81,6 +86,7 @@ src/
   server/
     loja.ts            ← funções do site  (server-only, SEM 'use server')
     painel.ts          ← funções do painel (server-only, SEM 'use server')
+    contexto.ts        ← carrega do banco o que as regras precisam
   app/
     layout.tsx, globals.css   ← compartilhados
     (site)/            ← Dev 2. Fronteira pública: (site)/_dados/index.ts ('use server')
@@ -97,6 +103,25 @@ Uma função marcada com `'use server'` **vira um endpoint público**: qualquer 
   - `src/app/(site)/_dados/index.ts`: `'use server'` e chama `src/server/loja.ts`.
   - `src/app/painel/_dados/index.ts`: `'use server'`, **chama `exigirLogin()` em toda função** e só depois chama `src/server/painel.ts`.
 - Componentes nunca importam `src/server/` direto.
+
+### Erros: como mostrar na tela
+
+- **Site:** `calcularPedido`, `criarPedido` e `criarOrcamentoFesta` **não lançam erro** por dado errado. Devolvem `{ ok: false, erros: [...] }`, cada erro com `campo` (ou `produtoId`) e a `mensagem` pronta. Mostre a mensagem junto do campo.
+- **Painel:** as funções lançam `ErroNegocio` com a mensagem pronta (ex.: "Esse pedido já foi entregue e não pode ser cancelado."). **Em produção o Next esconde a mensagem de erros lançados por server actions**, então o `_dados` do painel precisa capturar e devolver um resultado:
+
+```ts
+import { mensagemParaUsuario } from '@/lib/erros';
+
+export async function mudarStatusAcao(id: string, status: StatusPedido) {
+  await exigirLogin();
+  try {
+    await mudarStatus(id, status);
+    return { ok: true as const };
+  } catch (e) {
+    return { ok: false as const, mensagem: mensagemParaUsuario(e) };
+  }
+}
+```
 
 ### Regra de ouro dos valores
 
@@ -124,7 +149,9 @@ Enquanto uma função de `src/server/` ainda lança "não implementado", cada á
 | Caixa de 50 | Exatamente 50, sabores à escolha | A partir de 5 dias; limite de caixas por dia | Preço fixo da caixa (a confirmar com o cliente) |
 | Festa | Orçamento | Evento a partir de 5 dias | Combinado pelo WhatsApp |
 
-- **Entrega:** retirada grátis no Centro ou taxa fixa por bairro (3 zonas). Frete cortesia acima de R$ 250.
+- **Entrega:** retirada grátis no Centro ou taxa fixa por bairro (3 zonas). Frete cortesia a partir de R$ 250.
+- **Agenda:** até 30 dias à frente. Dia com o limite de Caixas de 50 atingido some da lista (caixa cancelada libera a vaga). Dois clientes pegando a última vaga ao mesmo tempo: só um consegue.
+- **Status do pedido:** Recebido → Fazendo → Pronto → Saiu → Entregue (retirada pula o "Saiu"). Dá para voltar um passo (o "Desfazer", inclusive depois de cancelar) e cancelar qualquer pedido ainda não entregue.
 - **Pagamento:** Pix (BR Code). Cartão via gateway na fase 2. Nunca guardamos dados de cartão.
 - **Cadastro:** só nome e WhatsApp, com aceite do aviso de privacidade. Sem CPF.
 - **Sabor esgotado:** marcado no painel, some do pedido no site na hora.

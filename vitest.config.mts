@@ -12,6 +12,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    // Os de integração precisam do banco: rodam à parte com `npm run test:integracao`.
+    exclude: ['**/node_modules/**', 'src/**/*.integracao.test.ts'],
     // Fixa o fuso do processo em UTC para provar que as regras não dependem do fuso do servidor.
     env: { TZ: 'UTC' },
   },

@@ -17,7 +17,8 @@
     "db:seed": "tsx src/lib/db/seed.ts",
     "db:setup": "npm run db:migrate && npm run db:seed",
     "db:reset": "tsx src/lib/db/reset.ts && npm run db:setup",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "test:integracao": "vitest run --config vitest.integracao.config.mts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.4",

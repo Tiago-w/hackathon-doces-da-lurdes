@@ -1,0 +1,1 @@
+ALTER TABLE "pedidos" ADD COLUMN "status_anterior" "status_pedido";
