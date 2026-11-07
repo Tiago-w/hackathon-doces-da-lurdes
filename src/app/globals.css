@@ -1,55 +1,42 @@
 @import "tailwindcss";
 
-/*
- * Tema da Doces da Lurdes: compartilhado entre o site (Dev 2) e o Modo Vovó (Dev 3).
- * Quer mudar ou acrescentar uma cor/fonte? Combine no grupo antes: é arquivo compartilhado.
- *
- * Paleta PROVISÓRIA: tons de doce caseiro (creme, caramelo, chocolate). O Dev 2 vai propor a final.
- * Todas as combinações de texto abaixo passam no contraste WCAG AA:
- *   chocolate sobre creme ≈ 13,7:1 · branco sobre caramelo ≈ 7,1:1 · chocolate sobre doce-de-leite ≈ 8:1
- *   sucesso/alerta/erro sobre branco ou sobre o próprio "-fundo" ≥ 5,5:1
- *
- * Uso no Tailwind: bg-creme, text-chocolate, bg-caramelo, border-borda, text-sucesso etc.
- */
 @theme {
-  --color-creme: #fff8ee;           /* fundo da página */
+  --color-creme: #faf5ed;           /* fundo amanteigado suave */
   --color-papel: #ffffff;           /* fundo de cartões */
-  --color-borda: #e8d9c5;           /* bordas e divisórias */
-  --color-chocolate: #3b2416;       /* texto principal */
-  --color-chocolate-suave: #6b4f3c; /* texto secundário (≥ 7:1 sobre creme) */
-  --color-caramelo: #8a4512;        /* botões principais, links */
-  --color-caramelo-escuro: #6e360d; /* botão pressionado / hover */
-  --color-doce-de-leite: #e9b872;   /* destaques e selos (texto chocolate por cima) */
-  --color-sucesso: #1f6b3a;         /* "Tem", "Pago", "Pronto" */
-  --color-sucesso-fundo: #e3f2e7;
-  --color-alerta: #7a4f00;          /* "Pix pendente" (texto) */
-  --color-alerta-fundo: #fff1cc;
-  --color-erro: #b42318;            /* "Acabou", erros */
+  --color-borda: #e5d6c1;           /* bordas e divisórias elegantes */
+  --color-chocolate: #2c1810;       /* cacau intenso para leitura nítida */
+  --color-chocolate-suave: #634838; /* texto secundário (contraste AAA/AA) */
+  --color-caramelo: #8f4310;        /* âmbar / doce de ovos queimado */
+  --color-caramelo-escuro: #6d3109; /* estado ativo/hover */
+  --color-doce-de-leite: #ebd9b8;   /* destaques e selos suaves */
+  --color-sucesso: #1b6336;         /* confirmação e WhatsApp */
+  --color-sucesso-fundo: #e4f3e9;
+  --color-alerta: #7a4d00;          /* avisos de atenção */
+  --color-alerta-fundo: #fef2d1;
+  --color-erro: #b42318;            /* estados críticos / esgotado */
   --color-erro-fundo: #fde8e6;
 
-  --font-texto: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-titulo: Georgia, "Times New Roman", serif;
+  --font-texto: var(--font-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-titulo: var(--font-editorial), Georgia, "Times New Roman", serif;
 }
 
 :root {
-  /* Só tema claro por enquanto: o tablet da cozinha não deve virar escuro sozinho. */
   color-scheme: light;
 }
 
 html {
-  /* Respeita o tamanho de fonte escolhido no celular/navegador (não fixe px no html). */
   -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--color-creme);
+  background-color: var(--color-creme);
   color: var(--color-chocolate);
   font-family: var(--font-texto);
-  font-size: 1.125rem; /* 18px: base do site. O Modo Vovó aumenta no próprio layout. */
-  line-height: 1.5;
+  font-size: 1.0625rem;
+  line-height: 1.55;
 }
 
-/* Foco sempre visível para quem navega por teclado. */
 :focus-visible {
   outline: 3px solid var(--color-caramelo);
   outline-offset: 2px;

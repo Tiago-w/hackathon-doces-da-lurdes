@@ -35,9 +35,9 @@ export function FormularioLogin() {
       <div>
         <label
           htmlFor="campo-senha-painel"
-          className="block text-[24px] font-bold text-chocolate mb-3"
+          className="block text-[22px] font-bold text-chocolate mb-2.5"
         >
-          🔑 Digite a senha do painel
+          Senha de acesso da cozinha
         </label>
         <div className="relative flex flex-col sm:flex-row gap-3">
           <input
@@ -49,18 +49,18 @@ export function FormularioLogin() {
               setSenha(e.target.value);
               if (erro) setErro(null);
             }}
-            placeholder="Senha da dona Lurdes"
+            placeholder="Digite a senha da cozinha"
             autoComplete="current-password"
             autoFocus
             disabled={pendente}
-            className="w-full min-h-16 px-5 py-4 text-[26px] font-semibold bg-papel text-chocolate border-3 border-chocolate/40 rounded-2xl focus:border-caramelo focus:outline-none placeholder:text-chocolate-suave/60"
+            className="w-full min-h-16 px-5 py-4 text-[24px] font-semibold bg-papel text-chocolate border-2 border-borda rounded-2xl focus:border-caramelo focus:outline-none placeholder:text-chocolate-suave/55"
           />
           <button
             type="button"
             onClick={() => setMostrarSenha((v) => !v)}
-            className="min-h-16 px-5 py-3 text-[20px] font-bold bg-creme text-chocolate border-2 border-borda rounded-2xl shrink-0 active:bg-doce-de-leite/40"
+            className="min-h-16 px-5 py-3 text-[19px] font-bold bg-creme text-chocolate border-2 border-borda rounded-2xl shrink-0 hover:border-caramelo active:bg-doce-de-leite/40 cursor-pointer"
           >
-            {mostrarSenha ? '🙈 Esconder' : '👁️ Ver senha'}
+            {mostrarSenha ? 'Ocultar' : 'Mostrar'}
           </button>
         </div>
       </div>
@@ -68,11 +68,8 @@ export function FormularioLogin() {
       {erro && (
         <div
           role="alert"
-          className="p-4 rounded-2xl bg-erro-fundo border-2 border-erro text-erro text-[22px] font-bold flex items-center gap-3"
+          className="p-4 rounded-2xl bg-erro-fundo border-2 border-erro text-erro text-[20px] font-bold flex items-center gap-3"
         >
-          <span aria-hidden="true" className="text-[28px]">
-            ⚠️
-          </span>
           <span>{erro}</span>
         </div>
       )}
@@ -80,9 +77,9 @@ export function FormularioLogin() {
       <button
         type="submit"
         disabled={pendente}
-        className="w-full min-h-[72px] px-8 py-4 rounded-2xl bg-caramelo active:bg-caramelo-escuro text-papel text-[26px] font-bold shadow-md disabled:opacity-60 flex items-center justify-center gap-3 cursor-pointer"
+        className="w-full min-h-[68px] px-8 py-4 rounded-2xl bg-caramelo hover:bg-caramelo-escuro active:bg-caramelo-escuro text-papel text-[24px] font-bold shadow-md disabled:opacity-60 flex items-center justify-center gap-3 cursor-pointer transition-colors"
       >
-        {pendente ? '⏳ Entrando...' : '🍬 Entrar'}
+        {pendente ? 'Verificando acesso...' : 'Entrar no Painel da Cozinha'}
       </button>
     </form>
   );

@@ -1,7 +1,7 @@
 'use client';
 import type { Produto } from '@/lib/contrato';
 import { formatarReais } from '@/lib/dinheiro';
-import { FotoSabor } from './FotoSabor';
+import { FotoSabor, obterSeloDoce } from './FotoSabor';
 import { IconeAlerta, IconeMais, IconeMenos } from './icones';
 import type { Quantidades } from './carrinho';
 import { AVISO_ESGOTADO } from './textos';
@@ -23,7 +23,7 @@ interface Props {
 }
 
 const botaoQtd =
-  'inline-flex size-14 shrink-0 items-center justify-center rounded-2xl border-2 text-chocolate transition-colors disabled:cursor-not-allowed disabled:border-borda disabled:bg-creme disabled:text-chocolate-suave/50';
+  'inline-flex size-11 shrink-0 items-center justify-center rounded-xl border text-chocolate transition-colors cursor-pointer disabled:cursor-not-allowed disabled:border-borda disabled:bg-creme disabled:text-chocolate-suave/40';
 
 export function ListaSabores({
   produtos,
@@ -44,29 +44,43 @@ export function ListaSabores({
         const podeMais = !esgotado && restante > 0;
         const idNome = `sabor-${p.id}`;
         const idAviso = `aviso-${p.id}`;
+        const seloCategoria = obterSeloDoce(p.nome);
+
         return (
           <li
             key={p.id}
             id={`item-${p.id}`}
-            className={`rounded-3xl border-2 p-4 ${
-              erro ? 'border-erro bg-erro-fundo' : esgotado ? 'border-borda bg-creme' : q > 0 ? 'border-caramelo bg-papel' : 'border-borda bg-papel'
+            className={`rounded-2xl border p-4 transition-all ${
+              erro
+                ? 'border-2 border-erro bg-erro-fundo'
+                : esgotado
+                  ? 'border-borda bg-creme/70'
+                  : q > 0
+                    ? 'border-2 border-caramelo bg-papel shadow-xs'
+                    : 'border-borda bg-papel hover:border-caramelo/40'
             }`}
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-start gap-4">
               <FotoSabor
                 nome={p.nome}
                 fotoUrl={p.fotoUrl}
-                sizes="72px"
-                className={`size-18 shrink-0 rounded-2xl ${esgotado ? 'opacity-50 grayscale' : ''}`}
+                sizes="80px"
+                className={`size-20 shrink-0 rounded-xl border border-borda/60 ${esgotado ? 'opacity-50 grayscale' : ''}`}
               />
               <div className="min-w-0 flex-1">
-                <h3 id={idNome} className={`text-xl font-bold leading-tight ${esgotado ? 'text-chocolate-suave' : 'text-chocolate'}`}>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-caramelo">{seloCategoria}</span>
+                  {mostrarPreco && (
+                    <span className="font-titulo text-base font-bold text-chocolate">{formatarReais(p.precoCentavos)} / un.</span>
+                  )}
+                </div>
+                <h3 id={idNome} className={`font-titulo text-xl font-bold leading-snug ${esgotado ? 'text-chocolate-suave' : 'text-chocolate'}`}>
                   {p.nome}
                 </h3>
-                {mostrarPreco && <p className="text-lg text-chocolate-suave">{formatarReais(p.precoCentavos)} cada</p>}
+                {p.descricao && <p className="mt-0.5 text-sm text-chocolate-suave line-clamp-2">{p.descricao}</p>}
                 {esgotado && (
-                  <p id={idAviso} className="mt-1 inline-flex items-center gap-1 rounded-lg bg-erro-fundo px-2 py-0.5 text-base font-bold text-erro">
-                    <IconeAlerta className="size-4 shrink-0" />
+                  <p id={idAviso} className="mt-1.5 inline-flex items-center gap-1 rounded-lg bg-erro-fundo px-2.5 py-0.5 text-xs font-bold text-erro">
+                    <IconeAlerta className="size-3.5 shrink-0" />
                     {AVISO_ESGOTADO}
                   </p>
                 )}
@@ -74,17 +88,17 @@ export function ListaSabores({
             </div>
 
             {erro && (
-              <p role="alert" className="mt-3 flex items-start gap-2 text-lg font-bold text-erro">
-                <IconeAlerta className="mt-0.5 size-5 shrink-0" />
+              <p role="alert" className="mt-3 flex items-start gap-2 text-sm font-bold text-erro">
+                <IconeAlerta className="mt-0.5 size-4 shrink-0" />
                 {erro}
               </p>
             )}
 
             {(!esgotado || q > 0) && (
-              <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-labelledby={idNome}>
+              <div className="mt-3.5 flex flex-wrap items-center gap-2 border-t border-borda/60 pt-3" role="group" aria-labelledby={idNome}>
                 <button
                   type="button"
-                  className={`${botaoQtd} border-caramelo bg-papel hover:bg-creme`}
+                  className={`${botaoQtd} border-borda bg-papel hover:border-caramelo hover:bg-creme`}
                   onClick={() => onMudar(p.id, q - 1)}
                   disabled={q === 0}
                   aria-label={`Tirar um ${p.nome}`}
@@ -92,7 +106,7 @@ export function ListaSabores({
                   <IconeMenos />
                 </button>
                 <output
-                  className="min-w-12 text-center text-2xl font-bold tabular-nums text-chocolate"
+                  className="min-w-10 text-center font-titulo text-xl font-bold tabular-nums text-chocolate"
                   aria-live="polite"
                   aria-label={`${q} ${p.nome}`}
                 >
@@ -113,7 +127,7 @@ export function ListaSabores({
                     <button
                       key={n}
                       type="button"
-                      className={`${botaoQtd} w-auto min-w-14 border-caramelo bg-papel px-3 text-lg font-bold text-caramelo hover:bg-creme`}
+                      className={`${botaoQtd} w-auto min-w-12 border-caramelo/40 bg-doce-de-leite/25 px-3 text-sm font-bold text-chocolate hover:bg-doce-de-leite/55`}
                       onClick={() => onMudar(p.id, q + Math.min(n, restante))}
                       disabled={!podeMais}
                       aria-label={`Pôr mais ${n} ${p.nome}`}
@@ -122,7 +136,9 @@ export function ListaSabores({
                     </button>
                   ))}
                 {mostrarPreco && q > 0 && (
-                  <span className="ml-auto text-lg font-bold text-chocolate">{formatarReais(q * p.precoCentavos)}</span>
+                  <span className="ml-auto font-titulo text-base font-bold text-chocolate">
+                    Subtotal: {formatarReais(q * p.precoCentavos)}
+                  </span>
                 )}
               </div>
             )}

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { Produto } from '@/lib/contrato';
 import { formatarReais, lerReais } from '@/lib/dinheiro';
+import { FotoSabor, obterSeloDoce } from '@/components/site/FotoSabor';
 
 export interface DesfazerDisponibilidadeSabor {
   produtoId: string;
@@ -18,19 +19,6 @@ interface PropriedadesAbaSabores {
   aoAlternarDisponivel: (produto: Produto, disponivel: boolean) => void;
   aoDesfazerDisponivel: (desfazer: DesfazerDisponibilidadeSabor) => void;
   aoMudarPreco: (produto: Produto, novoPrecoCentavos: number) => Promise<boolean>;
-}
-
-function iconeDoSabor(nome: string): string {
-  const n = nome.toLowerCase();
-  if (n.includes('quindim')) return '🍮';
-  if (n.includes('camafeu')) return '🌰';
-  if (n.includes('bem-casado') || n.includes('bem casado')) return '🎀';
-  if (n.includes('brigadeiro')) return '🍫';
-  if (n.includes('olho de sogra')) return '🍑';
-  if (n.includes('santa clara') || n.includes('pastel')) return '🥟';
-  if (n.includes('trouxinha')) return '🍯';
-  if (n.includes('queijadinha')) return '🧀';
-  return '🍬';
 }
 
 export function AbaSabores({
@@ -92,17 +80,17 @@ export function AbaSabores({
     <section aria-label="Sabores do catálogo" className="space-y-6">
       {/* Instrução simples e resumo */}
       <div className="flex flex-wrap items-center justify-between gap-4 p-5 rounded-2xl bg-papel border-2 border-borda">
-        <p className="text-[22px] font-bold text-chocolate">
-          🍬 Toque em <span className="text-erro font-extrabold">Acabou</span> quando faltar um doce, ou em{' '}
-          <span className="text-sucesso font-extrabold">Tem</span> quando voltar.
+        <p className="text-[21px] font-bold text-chocolate">
+          Toque em <span className="text-erro font-extrabold">Acabou</span> quando faltar um doce na cozinha, ou em{' '}
+          <span className="text-sucesso font-extrabold">Tem</span> quando voltar ao cardápio.
         </p>
-        <div className="flex flex-wrap gap-3 text-[20px] font-extrabold">
+        <div className="flex flex-wrap gap-3 text-[19px] font-extrabold">
           <span className="px-4 py-2 rounded-xl bg-sucesso-fundo text-sucesso border border-sucesso/40">
-            ✅ {qtdDisponiveis} com estoque
+            {qtdDisponiveis} disponíveis no site
           </span>
           {qtdEsgotados > 0 && (
             <span className="px-4 py-2 rounded-xl bg-erro-fundo text-erro border border-erro/40">
-              🚫 {qtdEsgotados} acabou
+              {qtdEsgotados} esgotado{qtdEsgotados > 1 ? 's' : ''}
             </span>
           )}
         </div>
@@ -113,11 +101,8 @@ export function AbaSabores({
         <div
           role="status"
           aria-live="polite"
-          className="p-5 rounded-2xl bg-sucesso-fundo border-3 border-sucesso text-sucesso text-[24px] font-extrabold flex items-center gap-3 shadow-sm"
+          className="p-5 rounded-2xl bg-sucesso-fundo border-2 border-sucesso text-sucesso text-[22px] font-extrabold flex items-center gap-3 shadow-sm"
         >
-          <span aria-hidden="true" className="text-[30px]">
-            ✅
-          </span>
           <span>{mensagemConfirmacao}</span>
         </div>
       )}
@@ -133,58 +118,46 @@ export function AbaSabores({
           return (
             <article
               key={produto.id}
-              className={`rounded-3xl p-6 sm:p-7 transition-all flex flex-col justify-between gap-5 shadow-md ${
+              className={`rounded-3xl p-6 sm:p-7 transition-all flex flex-col justify-between gap-5 shadow-sm ${
                 produto.disponivel
-                  ? 'bg-papel border-3 border-borda text-chocolate'
-                  : 'bg-creme/90 border-3 border-erro/60 text-chocolate-suave opacity-90'
+                  ? 'bg-papel border-2 border-borda text-chocolate'
+                  : 'bg-creme/90 border-2 border-erro/60 text-chocolate-suave'
               }`}
             >
               <div className="space-y-4">
-                {/* Foto ou Placeholder bonito + Nome e Preço */}
+                {/* Ilustração autoral FotoSabor + Nome e Status */}
                 <div className="flex items-start gap-5">
-                  {produto.fotoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={produto.fotoUrl}
-                      alt={produto.nome}
-                      className={`w-24 h-24 rounded-2xl object-cover border-2 border-borda shrink-0 ${
-                        !produto.disponivel ? 'grayscale' : ''
-                      }`}
-                    />
-                  ) : (
-                    <div
-                      aria-hidden="true"
-                      className={`w-24 h-24 rounded-2xl flex items-center justify-center text-[48px] shrink-0 border-2 ${
-                        produto.disponivel
-                          ? 'bg-doce-de-leite/35 border-caramelo/40'
-                          : 'bg-borda/60 border-borda grayscale'
-                      }`}
-                    >
-                      {iconeDoSabor(produto.nome)}
-                    </div>
-                  )}
+                  <FotoSabor
+                    nome={produto.nome}
+                    fotoUrl={produto.fotoUrl}
+                    sizes="96px"
+                    className={`w-24 h-24 rounded-2xl border border-borda shrink-0 ${
+                      !produto.disponivel ? 'grayscale opacity-65' : ''
+                    }`}
+                  />
 
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <span className="text-xs font-bold uppercase tracking-wider text-caramelo">
+                        {obterSeloDoce(produto.nome)}
+                      </span>
                       {produto.disponivel ? (
-                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-xl bg-sucesso-fundo text-sucesso border border-sucesso/50 text-[19px] font-extrabold">
-                          <span aria-hidden="true">✅</span>
-                          <span>Tem no site</span>
+                        <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-sucesso-fundo text-sucesso border border-sucesso/40 text-[16px] font-extrabold">
+                          Disponível no site
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-xl bg-erro text-papel text-[19px] font-extrabold">
-                          <span aria-hidden="true">🚫</span>
-                          <span>Acabou (bloqueado no site)</span>
+                        <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-erro text-papel text-[16px] font-extrabold">
+                          Pausado no site
                         </span>
                       )}
                     </div>
 
-                    <h3 className="text-[28px] sm:text-[30px] font-extrabold text-chocolate leading-tight">
+                    <h3 className="font-titulo text-[28px] sm:text-[30px] font-bold text-chocolate leading-tight">
                       {produto.nome}
                     </h3>
 
                     {produto.descricao && (
-                      <p className="text-[20px] text-chocolate-suave mt-1 leading-snug">
+                      <p className="text-[19px] text-chocolate-suave mt-1 leading-snug">
                         {produto.descricao}
                       </p>
                     )}
@@ -197,7 +170,7 @@ export function AbaSabores({
                     role="status"
                     className="p-4 rounded-2xl bg-alerta-fundo border-2 border-alerta text-chocolate flex flex-wrap items-center justify-between gap-3"
                   >
-                    <span className="text-[20px] font-bold">
+                    <span className="text-[19px] font-bold">
                       Pronto! O site já mostra que{' '}
                       {produto.disponivel
                         ? `tem ${produto.nome}.`
@@ -207,9 +180,9 @@ export function AbaSabores({
                       type="button"
                       disabled={salvando}
                       onClick={() => aoDesfazerDisponivel(desfazer)}
-                      className="min-h-16 px-5 py-2.5 rounded-2xl bg-papel text-chocolate border-2 border-chocolate font-extrabold text-[20px] cursor-pointer"
+                      className="min-h-14 px-5 py-2 rounded-xl bg-papel text-chocolate border-2 border-chocolate font-extrabold text-[19px] cursor-pointer"
                     >
-                      ↩️ Desfazer
+                      Desfazer
                     </button>
                   </div>
                 )}
@@ -229,16 +202,13 @@ export function AbaSabores({
                         aoAlternarDisponivel(produto, true);
                       }
                     }}
-                    className={`min-h-[72px] px-5 py-4 rounded-2xl text-[24px] font-extrabold flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
+                    className={`min-h-[68px] px-5 py-3.5 rounded-2xl text-[23px] font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                       produto.disponivel
-                        ? 'bg-sucesso text-papel border-3 border-sucesso shadow-md ring-4 ring-sucesso/25'
-                        : 'bg-papel text-chocolate border-2 border-borda active:bg-sucesso-fundo'
+                        ? 'bg-sucesso text-papel border-2 border-sucesso shadow-sm ring-4 ring-sucesso/20'
+                        : 'bg-papel text-chocolate border-2 border-borda hover:border-sucesso/50 active:bg-sucesso-fundo'
                     }`}
                   >
-                    <span aria-hidden="true" className="text-[28px]">
-                      ✅
-                    </span>
-                    <span>Tem</span>
+                    <span>Tem hoje</span>
                   </button>
 
                   <button
@@ -250,28 +220,25 @@ export function AbaSabores({
                         aoAlternarDisponivel(produto, false);
                       }
                     }}
-                    className={`min-h-[72px] px-5 py-4 rounded-2xl text-[24px] font-extrabold flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
+                    className={`min-h-[68px] px-5 py-3.5 rounded-2xl text-[23px] font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                       !produto.disponivel
-                        ? 'bg-erro text-papel border-3 border-erro shadow-md ring-4 ring-erro/25'
-                        : 'bg-papel text-chocolate border-2 border-borda active:bg-erro-fundo'
+                        ? 'bg-erro text-papel border-2 border-erro shadow-sm ring-4 ring-erro/20'
+                        : 'bg-papel text-chocolate border-2 border-borda hover:border-erro/50 active:bg-erro-fundo'
                     }`}
                   >
-                    <span aria-hidden="true" className="text-[28px]">
-                      🚫
-                    </span>
                     <span>Acabou</span>
                   </button>
                 </div>
               </div>
 
               {/* Preço unitário e botão Mudar Preço */}
-              <div className="pt-4 border-t-2 border-borda space-y-4">
+              <div className="pt-4 border-t border-borda space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
-                    <span className="block text-[19px] font-bold text-chocolate-suave">
-                      Preço da unidade
+                    <span className="block text-[17px] font-bold uppercase tracking-wider text-chocolate-suave">
+                      Preço avulso
                     </span>
-                    <span className="text-[30px] font-extrabold text-chocolate">
+                    <span className="font-titulo text-[28px] font-bold text-chocolate">
                       {formatarReais(produto.precoCentavos)}
                     </span>
                   </div>
@@ -281,9 +248,8 @@ export function AbaSabores({
                       type="button"
                       disabled={salvando}
                       onClick={() => abrirEdicaoPreco(produto)}
-                      className="min-h-16 px-6 py-3 rounded-2xl bg-creme text-chocolate border-2 border-chocolate/40 font-extrabold text-[21px] inline-flex items-center gap-2 active:bg-doce-de-leite/40 cursor-pointer"
+                      className="min-h-14 px-5 py-2.5 rounded-2xl bg-creme text-chocolate border-2 border-borda hover:border-caramelo font-extrabold text-[19px] inline-flex items-center gap-2 active:bg-doce-de-leite/40 cursor-pointer"
                     >
-                      <span aria-hidden="true">✏️</span>
                       <span>Mudar preço</span>
                     </button>
                   )}
@@ -297,7 +263,7 @@ export function AbaSabores({
                   >
                     <label
                       htmlFor={`novo-preco-${produto.id}`}
-                      className="block text-[22px] font-extrabold text-chocolate"
+                      className="block text-[21px] font-extrabold text-chocolate"
                     >
                       Novo preço para {produto.nome} (em R$):
                     </label>
@@ -312,19 +278,19 @@ export function AbaSabores({
                       }}
                       placeholder="Ex.: 4,50"
                       autoFocus
-                      className="w-full min-h-16 px-5 py-3 rounded-2xl bg-papel text-chocolate border-3 border-chocolate/50 text-[28px] font-extrabold focus:border-caramelo focus:outline-none"
+                      className="w-full min-h-16 px-5 py-3 rounded-2xl bg-papel text-chocolate border-2 border-chocolate/50 text-[26px] font-extrabold focus:border-caramelo focus:outline-none"
                     />
 
                     {erroPreco && (
-                      <p role="alert" className="text-[20px] font-bold text-erro">
-                        ⚠️ {erroPreco}
+                      <p role="alert" className="text-[19px] font-bold text-erro">
+                        {erroPreco}
                       </p>
                     )}
 
                     <div className="flex flex-wrap gap-4">
                       <button
                         type="submit"
-                        className="flex-1 min-h-16 px-6 py-3 rounded-2xl bg-caramelo text-papel font-extrabold text-[22px] cursor-pointer"
+                        className="flex-1 min-h-14 px-6 py-3 rounded-2xl bg-caramelo text-papel font-extrabold text-[21px] cursor-pointer"
                       >
                         Continuar
                       </button>
@@ -334,7 +300,7 @@ export function AbaSabores({
                           setEditandoPrecoId(null);
                           setErroPreco(null);
                         }}
-                        className="min-h-16 px-6 py-3 rounded-2xl bg-papel text-chocolate border-2 border-borda font-bold text-[21px] cursor-pointer"
+                        className="min-h-14 px-6 py-3 rounded-2xl bg-papel text-chocolate border-2 border-borda font-bold text-[20px] cursor-pointer"
                       >
                         Cancelar
                       </button>
@@ -347,12 +313,12 @@ export function AbaSabores({
                   <div
                     role="alertdialog"
                     aria-label={`Confirmar novo preço de ${produto.nome}`}
-                    className="p-5 rounded-2xl bg-alerta-fundo border-3 border-alerta space-y-4"
+                    className="p-5 rounded-2xl bg-alerta-fundo border-2 border-alerta space-y-4"
                   >
-                    <p className="text-[24px] font-extrabold text-chocolate">
+                    <p className="text-[22px] font-extrabold text-chocolate">
                       Mudar o preço de {produto.nome}?
                     </p>
-                    <p className="text-[28px] font-extrabold text-caramelo">
+                    <p className="text-[26px] font-extrabold text-caramelo">
                       De {formatarReais(produto.precoCentavos)} para{' '}
                       {formatarReais(confirmacaoPreco.novoPrecoCentavos)}?
                     </p>
@@ -361,15 +327,15 @@ export function AbaSabores({
                         type="button"
                         disabled={salvando}
                         onClick={() => void confirmarNovoPreco()}
-                        className="flex-1 min-h-16 px-6 py-3 rounded-2xl bg-sucesso text-papel font-extrabold text-[22px] shadow-sm cursor-pointer"
+                        className="flex-1 min-h-14 px-6 py-3 rounded-2xl bg-sucesso text-papel font-extrabold text-[21px] shadow-sm cursor-pointer"
                       >
-                        ✅ Sim, salvar novo preço
+                        Sim, salvar novo preço
                       </button>
                       <button
                         type="button"
                         disabled={salvando}
                         onClick={() => setConfirmacaoPreco(null)}
-                        className="min-h-16 px-6 py-3 rounded-2xl bg-papel text-chocolate border-2 border-chocolate font-bold text-[21px] cursor-pointer"
+                        className="min-h-14 px-6 py-3 rounded-2xl bg-papel text-chocolate border-2 border-chocolate font-bold text-[20px] cursor-pointer"
                       >
                         Voltar
                       </button>

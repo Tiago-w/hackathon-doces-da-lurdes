@@ -524,40 +524,40 @@ export function PainelModoVovo({
   // 4.2 Tela "Abrir o dia" para destravar o som no navegador
   if (!diaIniciado) {
     return (
-      <main className="min-h-dvh flex items-center justify-center p-6 bg-creme">
-        <section className="w-full max-w-2xl bg-papel border-4 border-borda rounded-3xl shadow-xl p-8 sm:p-12 text-center space-y-8">
+      <main className="min-h-dvh flex items-center justify-center p-6 bg-[radial-gradient(circle_at_top,rgba(239,212,168,0.45)_0,transparent_55%)] bg-creme">
+        <section className="w-full max-w-2xl bg-papel border-2 border-borda rounded-3xl shadow-[0_24px_60px_-15px_rgba(44,24,16,0.12)] p-8 sm:p-12 text-center space-y-8">
           <div className="space-y-3">
-            <p className="text-[64px] leading-none" aria-hidden="true">
-              👵🍬☀️
-            </p>
-            <h1 className="font-[family-name:var(--font-titulo)] text-[38px] sm:text-[44px] font-bold text-chocolate leading-tight">
+            <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-chocolate text-doce-de-leite font-titulo text-4xl font-bold shadow-xs">
+              L
+            </div>
+            <span className="inline-block text-xs font-bold uppercase tracking-widest text-caramelo pt-1">
+              Painel da Cozinha · Modo Vovó
+            </span>
+            <h1 className="font-[family-name:var(--font-titulo)] text-[36px] sm:text-[42px] font-bold text-chocolate leading-tight">
               Bom dia, dona Lurdes!
             </h1>
-            <p className="text-[24px] text-chocolate-suave font-medium">
-              Toque no botão abaixo para abrir o painel e ligar o aviso sonoro de pedidos novos.
+            <p className="text-[22px] text-chocolate-suave font-medium">
+              Toque no botão abaixo para iniciar o expediente e ativar o aviso sonoro de novos pedidos.
             </p>
           </div>
 
           <div className="p-5 rounded-2xl bg-creme border-2 border-borda text-[22px] font-bold text-chocolate">
             {qtdAtivosHoje > 0 ? (
               <span>
-                📋 Você tem <strong>{qtdAtivosHoje}</strong>{' '}
-                {qtdAtivosHoje === 1 ? 'pedido para hoje' : 'pedidos para hoje'} esperando na cozinha.
+                Você tem <strong>{qtdAtivosHoje}</strong>{' '}
+                {qtdAtivosHoje === 1 ? 'pedido para hoje' : 'pedidos para hoje'} aguardando na fila da cozinha.
               </span>
             ) : (
-              <span>📋 Tudo pronto para receber os pedidos de hoje!</span>
+              <span>Tudo em dia para receber os pedidos de hoje.</span>
             )}
           </div>
 
           <button
             type="button"
             onClick={iniciarDia}
-            className="w-full min-h-[88px] px-10 py-6 rounded-3xl bg-caramelo active:bg-caramelo-escuro text-papel text-[32px] sm:text-[36px] font-extrabold shadow-lg flex items-center justify-center gap-4 cursor-pointer"
+            className="w-full min-h-[84px] px-10 py-6 rounded-2xl bg-caramelo hover:bg-caramelo-escuro active:bg-caramelo-escuro text-papel text-[30px] sm:text-[34px] font-extrabold shadow-lg flex items-center justify-center gap-4 cursor-pointer transition-colors"
           >
-            <span aria-hidden="true" className="text-[40px]">
-              🔔
-            </span>
-            <span>Começar</span>
+            <span>Começar o dia na cozinha</span>
           </button>
         </section>
       </main>
@@ -567,24 +567,24 @@ export function PainelModoVovo({
   return (
     <div className="min-h-dvh flex flex-col bg-creme">
       {/* Cabeçalho do Modo Vovó */}
-      <header className="bg-papel border-b-3 border-borda px-4 sm:px-8 py-4 shadow-sm">
+      <header className="bg-papel border-b-2 border-borda px-4 sm:px-8 py-4 shadow-xs">
         <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span aria-hidden="true" className="text-[36px]">
-              🍬
+          <div className="flex items-center gap-3.5">
+            <span className="flex size-12 items-center justify-center rounded-2xl bg-chocolate text-doce-de-leite font-titulo text-2xl font-bold">
+              L
             </span>
             <div>
-              <h1 className="font-[family-name:var(--font-titulo)] text-[28px] sm:text-[32px] font-bold text-chocolate leading-none">
-                Doces da Lurdes
+              <h1 className="font-[family-name:var(--font-titulo)] text-[26px] sm:text-[30px] font-bold text-chocolate leading-none">
+                Doces da Lurdes · Cozinha
               </h1>
-              <p className="text-[18px] text-chocolate-suave font-semibold mt-1">
-                Atualizado às {atualizadoAs}
+              <p className="text-[17px] text-chocolate-suave font-semibold mt-1">
+                Sincronizado às {atualizadoAs}
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {/* Botão para ligar/desligar o som, com ícone e texto */}
+            {/* Botão para ligar/desligar o som, com indicador visual e texto */}
             <button
               type="button"
               aria-pressed={somLigado}
@@ -595,25 +595,26 @@ export function PainelModoVovo({
                   desbloquearAudio();
                 }
               }}
-              className={`min-h-16 px-5 py-3 rounded-2xl text-[20px] font-extrabold border-2 flex items-center gap-2.5 cursor-pointer ${
+              className={`min-h-14 px-5 py-2.5 rounded-2xl text-[19px] font-extrabold border-2 flex items-center gap-2.5 cursor-pointer transition-colors ${
                 somLigado
-                  ? 'bg-sucesso-fundo text-sucesso border-sucesso'
+                  ? 'bg-sucesso-fundo text-sucesso border-sucesso/60'
                   : 'bg-creme text-chocolate-suave border-borda'
               }`}
             >
-              <span aria-hidden="true" className="text-[26px]">
-                {somLigado ? '🔊' : '🔇'}
-              </span>
+              <span
+                aria-hidden="true"
+                className={`size-3 rounded-full ${somLigado ? 'bg-sucesso' : 'bg-chocolate-suave/50'}`}
+              />
               <span>{somLigado ? 'Som ligado' : 'Som desligado'}</span>
             </button>
 
-            {/* Botão Sair discreto no canto para o neto */}
+            {/* Botão Sair discreto no canto */}
             <form action={acaoSair}>
               <button
                 type="submit"
-                className="min-h-16 px-4 py-3 rounded-2xl bg-creme text-chocolate-suave border-2 border-borda text-[19px] font-bold active:bg-borda/50 cursor-pointer"
+                className="min-h-14 px-4 py-2.5 rounded-2xl bg-creme text-chocolate-suave border-2 border-borda hover:border-caramelo text-[18px] font-bold active:bg-borda/50 cursor-pointer"
               >
-                🚪 Sair
+                Sair
               </button>
             </form>
           </div>
@@ -628,16 +629,15 @@ export function PainelModoVovo({
             type="button"
             onClick={() => setAbaAtiva('HOJE')}
             aria-current={abaAtiva === 'HOJE' ? 'page' : undefined}
-            className={`min-h-[68px] px-4 py-3 rounded-2xl text-[22px] sm:text-[24px] font-extrabold flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
+            className={`min-h-[64px] px-4 py-3 rounded-2xl text-[21px] sm:text-[23px] font-extrabold flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
               abaAtiva === 'HOJE'
-                ? 'bg-caramelo text-papel shadow-md border-3 border-caramelo-escuro'
-                : 'bg-creme text-chocolate border-2 border-borda'
+                ? 'bg-caramelo text-papel shadow-sm border-2 border-caramelo-escuro'
+                : 'bg-creme text-chocolate border-2 border-borda hover:border-caramelo/50'
             }`}
           >
-            <span aria-hidden="true">⚡</span>
             <span>Hoje</span>
             <span
-              className={`px-3 py-0.5 rounded-full text-[20px] font-extrabold ${
+              className={`px-3 py-0.5 rounded-full text-[19px] font-extrabold ${
                 abaAtiva === 'HOJE'
                   ? 'bg-papel text-caramelo'
                   : 'bg-doce-de-leite text-chocolate'
@@ -651,16 +651,15 @@ export function PainelModoVovo({
             type="button"
             onClick={() => setAbaAtiva('PROXIMOS')}
             aria-current={abaAtiva === 'PROXIMOS' ? 'page' : undefined}
-            className={`min-h-[68px] px-4 py-3 rounded-2xl text-[22px] sm:text-[24px] font-extrabold flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
+            className={`min-h-[64px] px-4 py-3 rounded-2xl text-[21px] sm:text-[23px] font-extrabold flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
               abaAtiva === 'PROXIMOS'
-                ? 'bg-caramelo text-papel shadow-md border-3 border-caramelo-escuro'
-                : 'bg-creme text-chocolate border-2 border-borda'
+                ? 'bg-caramelo text-papel shadow-sm border-2 border-caramelo-escuro'
+                : 'bg-creme text-chocolate border-2 border-borda hover:border-caramelo/50'
             }`}
           >
-            <span aria-hidden="true">📅</span>
             <span>Próximos dias</span>
             <span
-              className={`px-3 py-0.5 rounded-full text-[20px] font-extrabold ${
+              className={`px-3 py-0.5 rounded-full text-[19px] font-extrabold ${
                 abaAtiva === 'PROXIMOS'
                   ? 'bg-papel text-caramelo'
                   : 'bg-doce-de-leite/60 text-chocolate'
@@ -674,17 +673,16 @@ export function PainelModoVovo({
             type="button"
             onClick={() => setAbaAtiva('FESTAS')}
             aria-current={abaAtiva === 'FESTAS' ? 'page' : undefined}
-            className={`min-h-[68px] px-4 py-3 rounded-2xl text-[22px] sm:text-[24px] font-extrabold flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
+            className={`min-h-[64px] px-4 py-3 rounded-2xl text-[21px] sm:text-[23px] font-extrabold flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
               abaAtiva === 'FESTAS'
-                ? 'bg-caramelo text-papel shadow-md border-3 border-caramelo-escuro'
-                : 'bg-creme text-chocolate border-2 border-borda'
+                ? 'bg-caramelo text-papel shadow-sm border-2 border-caramelo-escuro'
+                : 'bg-creme text-chocolate border-2 border-borda hover:border-caramelo/50'
             }`}
           >
-            <span aria-hidden="true">🎂</span>
             <span>Festas</span>
             {qtdFestasNovas > 0 && (
               <span
-                className={`px-3 py-0.5 rounded-full text-[20px] font-extrabold ${
+                className={`px-3 py-0.5 rounded-full text-[19px] font-extrabold ${
                   abaAtiva === 'FESTAS'
                     ? 'bg-papel text-caramelo'
                     : 'bg-alerta-fundo text-alerta border border-alerta'
@@ -699,17 +697,16 @@ export function PainelModoVovo({
             type="button"
             onClick={() => setAbaAtiva('SABORES')}
             aria-current={abaAtiva === 'SABORES' ? 'page' : undefined}
-            className={`min-h-[68px] px-4 py-3 rounded-2xl text-[22px] sm:text-[24px] font-extrabold flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
+            className={`min-h-[64px] px-4 py-3 rounded-2xl text-[21px] sm:text-[23px] font-extrabold flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
               abaAtiva === 'SABORES'
-                ? 'bg-caramelo text-papel shadow-md border-3 border-caramelo-escuro'
-                : 'bg-creme text-chocolate border-2 border-borda'
+                ? 'bg-caramelo text-papel shadow-sm border-2 border-caramelo-escuro'
+                : 'bg-creme text-chocolate border-2 border-borda hover:border-caramelo/50'
             }`}
           >
-            <span aria-hidden="true">🍮</span>
             <span>Sabores</span>
             {qtdSaboresAcabaram > 0 && (
               <span
-                className={`px-3 py-0.5 rounded-full text-[19px] font-extrabold ${
+                className={`px-3 py-0.5 rounded-full text-[18px] font-extrabold ${
                   abaAtiva === 'SABORES'
                     ? 'bg-papel text-erro'
                     : 'bg-erro text-papel'

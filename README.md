@@ -1,165 +1,127 @@
-# Doces da Lurdes
+# Doces da Lurdes — Plataforma de Encomendas & KDS Artesanal
 
-Site e painel da **Doces da Lurdes**, confeitaria artesanal de Pelotas (RS) há 18 anos.
+Aplicação web full-stack desenvolvida para a **Doces da Lurdes**, confeitaria tradicional de Pelotas (RS) com 18 anos de história na produção artesanal de doces finos certificados pela tradição doceira pelotense (quindim de gema pura, camafeu de nozes, pastel de Santa Clara, bem-casado, ninho e trouxinha de ovos).
 
-- **Site do cliente** (`/`): vitrine, Caixa de 50 com sabores à escolha, doces avulsos (com entrega no mesmo dia), orçamento de festa e pagamento por Pix.
-- **Modo Vovó** (`/painel`): onde a dona Lurdes e o neto veem os pedidos, mudam o status e marcam quando um sabor acabou.
-
-Stack: **Next.js 15 (App Router) · TypeScript · Tailwind CSS 4 · PostgreSQL · Drizzle ORM · Zod · Vitest**.
+O sistema resolve o gargalo operacional de encomendas via WhatsApp sem descaracterizar o atendimento familiar, unindo uma **vitrine digital de alta conversão** para os clientes e um **painel de cozinha ergonômico (Modo Vovó)** projetado especificamente para operação em tablet/celular por usuários idosos durante a rotina de produção.
 
 ---
 
-## Como rodar
+## Sumário Arquitetural
 
-Precisa de **Node 20.19+** (recomendado 22) e **Docker**.
+A solução é dividida em três camadas desacopladas com validação estrita no servidor:
+
+1. **Experiência do Cliente (`src/app/(site)` & `src/components/site`)**
+   - **Vitrine Editorial & Ilustrações Vetoriais Autorais:** Identidade visual inspirada na doçaria clássica de Pelotas (`Fraunces` + `Plus Jakarta Sans`), com ilustrações vetoriais dedicadas para cada doce tradicional e adição rápida com 1 toque.
+   - **Montador Interativo da Caixa de 50 Doces (`/pedido/caixa`):** Barra de progresso fixa em tempo real, atalhos de preenchimento inteligente (*Sugestão Clássica Sortida* e *Top 5 Tradicionais*), trava automática na 50ª unidade e revalidação de estoque antes do checkout.
+   - **Pedidos Avulsos de Pronta Entrega (`/pedido/avulso`):** Suporte a pedidos de 1 a 49 unidades com liberação automática de entrega no mesmo dia quando realizados antes do horário de corte (14h no fuso de Pelotas).
+   - **Orçamentos para Eventos e Casamentos (`/pedido/festa`):** Captação estruturada de demandas para grandes celebrações com integração direta ao WhatsApp.
+   - **Checkout Transparente com Pix BR Code (`/pedido/finalizar`):** Cálculo automático de frete por zona/bairro de Pelotas (com isenção automática acima da faixa de cortesia), geração instantânea de payload Pix Copia e Cola no padrão EMV® QRCPS-MPM do Banco Central (CRC16-CCITT) e página permanente de acompanhamento do pedido (`/pedido/confirmado/[id]`).
+
+2. **Painel de Cozinha — "Modo Vovó" (`src/app/painel` & `src/components/painel`)**
+   - **Ergonomia Cognitiva & Acessibilidade Sênior:** Fontes ampliadas (20px a 34px), áreas de toque mínimas de 64px–72px, alto contraste sobre fundo creme quente (sem brilho excessivo na cozinha) e ausência de menus ocultos.
+   - **Fluxo de 1 Único Próximo Passo:** Cada cartão de pedido exibe apenas a ação correspondente à próxima etapa lógica da produção (`Começar a fazer` → `Marcar como pronto` → `Saiu para entrega` → `Marcar como entregue`, pulando a etapa de motoboy quando o pedido é para retirada).
+   - **Rede de Segurança ("Desfazer" em 10 segundos):** Qualquer alteração de status de pedido, orçamento ou disponibilidade de sabor oferece um botão imediato de reversão por 10 segundos para corrigir toques acidentais sem estresse.
+   - **Alerta Sonoro Web Audio API & Sincronização Contínua:** Tela inicial *"Abrir o dia"* que desbloqueia o contexto de áudio do navegador e emite um aviso sonoro suave (*plim-plim* sintetizado via `AudioContext`, sem dependência de arquivos externos) a cada novo pedido recebido, com polling automático a cada 10 segundos e tratamento resiliente de queda de conexão.
+   - **Controle de Estoque em Tempo Real:** Na aba *Sabores*, alternar um doce entre **Tem hoje** e **Acabou** bloqueia ou libera imediatamente o item na vitrine pública e no montador da Caixa de 50.
+
+3. **Motor de Regras de Negócio & Persistência (`src/lib` & `src/server`)**
+   - **Regras Puras e Determinísticas (`src/lib/regras.ts`):** Cálculo de subtotais, fretes por zona, elegibilidade de entrega no mesmo dia, calendário de 30 dias no fuso `America/Sao_Paulo` e controle de capacidade diária de Caixas de 50.
+   - **Proteção contra Condições de Corrida:** Transações PostgreSQL com `pg_advisory_xact_lock` garantem que dois clientes finalizando a última Caixa de 50 disponível para uma data não ultrapassem o limite diário da cozinha.
+   - **Imutabilidade Histórica de Pedidos:** Os itens do pedido gravam um snapshot do nome e preço unitário vigentes no momento da compra, preservando o histórico financeiro mesmo após reajustes no catálogo.
+   - **Fronteira de Segurança Server Actions:** Os módulos em `src/server/` utilizam `server-only` e nunca expõem `'use server'` diretamente; toda comunicação passa pelas fronteiras públicas auditadas em `src/app/(site)/_dados/index.ts` e `src/app/painel/_dados/index.ts` (esta última protegida por cookie `httpOnly` assinado via HMAC-SHA256 com comparação em tempo constante `timingSafeEqual`).
+
+---
+
+## Stack Tecnológica
+
+| Camada | Tecnologias |
+|---|---|
+| **Framework & UI** | Next.js 15 (App Router, Server Components, Server Actions), React 19, TypeScript 5 |
+| **Estilização & Tipografia** | Tailwind CSS 4, `Fraunces` (serifa editorial) + `Plus Jakarta Sans` (interface) |
+| **Banco de Dados & ORM** | PostgreSQL 16, Drizzle ORM (`drizzle-orm/node-postgres`), Drizzle Kit |
+| **Validação & Pagamentos** | Zod 3, Gerador próprio de Pix BR Code EMV (CRC16-CCITT), Normalizador WhatsApp |
+| **Qualidade & Testes** | Vitest (testes unitários de regras de negócio, painel e integração PostgreSQL), ESLint 9 |
+
+---
+
+## Como Executar Localmente
+
+### Pré-requisitos
+
+- **Node.js** `20.19+` ou `22.x`
+- **PostgreSQL 16** (via Docker / Podman Compose ou instância local)
+
+### Passo a Passo
 
 ```bash
-git clone https://github.com/Tiago-w/doces-da-lurdes.git
-cd doces-da-lurdes
+# 1. Clone o repositório
+git clone https://github.com/Tiago-w/hackathon-doces-da-lurdes.git
+cd hackathon-doces-da-lurdes
+
+# 2. Instale as dependências
 npm install
-cp .env.example .env        # ajuste se precisar
-npm run db:up               # sobe o Postgres local (porta 5433)
-npm run db:setup            # cria as tabelas e coloca os dados de exemplo
-npm run dev                 # http://localhost:3000  e  http://localhost:3000/painel
+
+# 3. Configure as variáveis de ambiente
+cp .env.example .env
+
+# 4. Inicie o banco PostgreSQL (porta 5433) e aplique as migrations + seed inicial
+npm run db:up
+npm run db:setup
+
+# 5. Inicie o servidor de desenvolvimento
+npm run dev
 ```
 
-Sem Docker? Use qualquer Postgres 16 e ajuste o `DATABASE_URL` no `.env`.
+Acesse no navegador:
 
-### Comandos
-
-| Comando | O que faz |
-|---|---|
-| `npm run dev` | Sobe o site em modo desenvolvimento |
-| `npm run verificar` | Typecheck + lint + testes. **Rode antes de abrir PR.** |
-| `npm test` | Testes das regras (rápidos, sem banco) |
-| `npm run test:integracao` | Testa as funções do servidor contra um Postgres de verdade (cria e usa o banco `doces_lurdes_teste`, sem tocar nos seus dados) |
-| `npm run build` | Build de produção |
-| `npm run db:up` | Sobe o Postgres do `docker-compose.yml` |
-| `npm run db:setup` | Aplica as migrations e roda o seed |
-| `npm run db:seed` | Só o seed (pode rodar de novo; não duplica nada) |
-| `npm run db:reset` | **Apaga o banco local** e recria com os dados de exemplo (recusa rodar fora de localhost) |
-| `npm run db:generate` | Gera uma migration depois de mudar o schema (**só o Dev 1**) |
-| `npm run db:studio` | Abre o Drizzle Studio para ver as tabelas no navegador |
+- **Loja do Cliente:** [http://localhost:3000](http://localhost:3000)
+- **Painel da Cozinha (Modo Vovó):** [http://localhost:3000/painel](http://localhost:3000/painel) (senha padrão configurada no `.env`: `lurdes123`)
 
 ---
 
-## Quem cuida do quê
+## Scripts Disponíveis
 
-Cada um mexe **só nas suas pastas**. É isso que evita conflito de merge.
-
-| Pasta | Dono |
+| Script | Descrição |
 |---|---|
-| `src/lib/` (contrato, regras, banco, utilitários), `src/server/`, `drizzle/`, `drizzle.config.ts`, `docker-compose.yml` | **Dev 1**: fundação e regras de negócio |
-| `src/app/(site)/`, `src/components/site/`, `public/site/` | **Dev 2**: site do cliente |
-| `src/app/painel/`, `src/components/painel/` | **Dev 3**: Modo Vovó |
-| `package.json`, `src/app/layout.tsx`, `src/app/globals.css`, `.env.example`, `README.md` | **Compartilhado**: avise no grupo antes de mexer |
-
-Precisa de um campo no banco, uma função nova, uma biblioteca ou uma cor no tema? **Peça ao Dev 1** em vez de mexer fora da sua pasta.
-
-## Git
-
-- Branches: `feat/regras` (Dev 1), `feat/site-cliente` (Dev 2), `feat/modo-vovo` (Dev 3), sempre a partir da `main`.
-- Commits pequenos, mensagem em português com o prefixo da área: `site: montador da Caixa de 50`, `painel: botão acabou`, `regras: frete por bairro`.
-- **Traga a `main` para a sua branch a cada ~1h30** (`git fetch && git merge origin/main`) e resolva o conflito na hora, enquanto ele é pequeno.
-- PR para a `main` nos pontos de integração combinados, com `npm run verificar` passando. Ordem de merge: Dev 1 → Dev 2 → Dev 3.
-- Nunca suba o `.env` (já está no `.gitignore`). Só o `.env.example`.
+| `npm run dev` | Inicia o servidor de desenvolvimento Next.js na porta `3000` |
+| `npm run build` | Executa o build otimizado de produção |
+| `npm run start` | Inicia o servidor de produção após o build |
+| `npm run verificar` | Executa checagem estática de tipos (`tsc --noEmit`), linter (`eslint`) e suíte completa de testes (`vitest`) |
+| `npm test` | Executa os testes unitários de regras de negócio, utilitários e painel |
+| `npm run test:integracao` | Executa os testes de integração contra um banco PostgreSQL real (`doces_lurdes_teste`) |
+| `npm run db:up` | Sobe o container PostgreSQL 16 definido no `docker-compose.yml` |
+| `npm run db:setup` | Aplica as migrations do Drizzle e popula o banco com o catálogo tradicional de Pelotas |
+| `npm run db:seed` | Reexecuta o seed de forma idempotente |
+| `npm run db:reset` | Recria o banco local do zero (possui trava de segurança que impede execução fora de `localhost`) |
 
 ---
 
-## Arquitetura
+## Estrutura de Diretórios
 
-```
+```text
 src/
-  lib/
-    contrato.ts        ← tipos combinados entre os três (a "fonte da verdade" das telas)
-    regras.ts          ← TODAS as regras de negócio (funções puras, testadas em regras.test.ts)
-    datas.ts           ← datas/horas no fuso de Pelotas (use sempre; nunca new Date().getDate())
-    dinheiro.ts        ← formatarReais(450) → "R$ 4,50"; lerReais("4,50") → 450
-    whatsapp.ts        ← normalizar, validar, formatar e montar link wa.me
-    mensagens.ts       ← textos prontos de WhatsApp (resumo do pedido, aviso de status ao cliente)
-    pix.ts             ← Pix copia e cola no padrão BR Code do Banco Central
-    erros.ts           ← ErroNegocio + mensagemParaUsuario (para o _dados do painel)
-    db/
-      schema.ts        ← tabelas (Drizzle)
-      index.ts         ← conexão (server-only)
-      seed.ts, reset.ts
-  server/
-    loja.ts            ← funções do site  (server-only, SEM 'use server')
-    painel.ts          ← funções do painel (server-only, SEM 'use server')
-    contexto.ts        ← carrega do banco o que as regras precisam
-  app/
-    layout.tsx, globals.css   ← compartilhados
-    (site)/            ← Dev 2. Fronteira pública: (site)/_dados/index.ts ('use server')
-    painel/            ← Dev 3. Fronteira pública: painel/_dados/index.ts ('use server' + exigirLogin)
-drizzle/               ← migrations geradas
+├── app/
+│   ├── (site)/                  # Rotas públicas da confeitaria (Vitrine, Montador de Caixa, Avulso, Festa, Checkout)
+│   │   └── _dados/              # Server Actions públicas que delegam para src/server/loja.ts
+│   ├── painel/                  # Rotas protegidas do Modo Vovó (/painel e /painel/entrar)
+│   │   ├── _auth.ts             # Autenticação stateless via cookie httpOnly assinado com HMAC-SHA256
+│   │   └── _dados/              # Server Actions autenticadas que exigem sessão antes de chamar src/server/painel.ts
+│   ├── globals.css              # Design tokens, paleta cromática e variáveis tipográficas
+│   └── layout.tsx               # Root layout com carregamento otimizado de fontes
+├── components/
+│   ├── site/                    # Componentes da loja (Cabecalho, CartaoVitrine, FotoSabor, MontadorCaixa, etc.)
+│   └── painel/                  # Componentes do KDS (PainelModoVovo, AbaHoje, AbaProximosDias, AbaFestas, AbaSabores)
+├── lib/
+│   ├── contrato.ts              # Contratos tipados compartilhados entre cliente, painel e servidor
+│   ├── regras.ts                # Regras de negócio puras (preços, frete, datas, capacidade da cozinha, transições)
+│   ├── datas.ts                 # Manipulação de datas e horários fixada no fuso America/Sao_Paulo
+│   ├── dinheiro.ts              # Conversão e formatação monetária em centavos inteiros
+│   ├── pix.ts                   # Geração de payload Pix Copia e Cola (BR Code EMV + CRC16)
+│   ├── whatsapp.ts              # Validação, máscara e geração de deep links wa.me
+│   ├── mensagens.ts             # Templates de confirmação e atualização de status para WhatsApp
+│   └── db/                      # Schema Drizzle ORM, cliente PostgreSQL, seed e reset
+└── server/
+    ├── contexto.ts              # Carregamento transacional de configurações e contagens do banco
+    ├── loja.ts                  # Casos de uso da loja (cálculo, criação de pedido com lock e orçamento)
+    └── painel.ts                # Casos de uso administrativos (transições de status, disponibilidade e preços)
 ```
-
-### ⚠️ Regra de segurança: onde fica o `'use server'`
-
-Uma função marcada com `'use server'` **vira um endpoint público**: qualquer pessoa pode chamá-la pela internet.
-
-- As funções de `src/server/` **não** têm `'use server'`. Elas importam `'server-only'` e confiam em quem as chama.
-- A **única** porta de entrada é o `_dados/index.ts` de cada área:
-  - `src/app/(site)/_dados/index.ts`: `'use server'` e chama `src/server/loja.ts`.
-  - `src/app/painel/_dados/index.ts`: `'use server'`, **chama `exigirLogin()` em toda função** e só depois chama `src/server/painel.ts`.
-- Componentes nunca importam `src/server/` direto.
-
-### Erros: como mostrar na tela
-
-- **Site:** `calcularPedido`, `criarPedido` e `criarOrcamentoFesta` **não lançam erro** por dado errado. Devolvem `{ ok: false, erros: [...] }`, cada erro com `campo` (ou `produtoId`) e a `mensagem` pronta. Mostre a mensagem junto do campo.
-- **Painel:** as funções lançam `ErroNegocio` com a mensagem pronta (ex.: "Esse pedido já foi entregue e não pode ser cancelado."). **Em produção o Next esconde a mensagem de erros lançados por server actions**, então o `_dados` do painel precisa capturar e devolver um resultado:
-
-```ts
-import { mensagemParaUsuario } from '@/lib/erros';
-
-export async function mudarStatusAcao(id: string, status: StatusPedido) {
-  await exigirLogin();
-  try {
-    await mudarStatus(id, status);
-    return { ok: true as const };
-  } catch (e) {
-    return { ok: false as const, mensagem: mensagemParaUsuario(e) };
-  }
-}
-```
-
-### Regra de ouro dos valores
-
-O navegador manda só a **intenção** do cliente (quais sabores, quantos, bairro, data). **Preço, frete, datas permitidas e disponibilidade são sempre recalculados no servidor** (`calcularPedido` / `criarPedido`). Validação no navegador é só conforto para o usuário.
-
-### Convenções
-
-- **Dinheiro em centavos** (inteiro). Formate só na hora de mostrar.
-- **Datas** de entrega/evento como texto `YYYY-MM-DD`, no fuso `America/Sao_Paulo`. Use `src/lib/datas.ts`.
-- **WhatsApp** só dígitos, com DDD, sem o 55: `53999998888`.
-- **Pedidos guardam cópia** de nome, preço e bairro da época: mudar o preço hoje não altera pedidos antigos.
-- **Mensagens de erro** do servidor já vêm em português simples, prontas para mostrar.
-
-### Mocks
-
-Enquanto uma função de `src/server/` ainda lança "não implementado", cada área usa o seu `_dados/mock.ts`, ligado por `SITE_USAR_MOCK` / `PAINEL_USAR_MOCK` no `.env`. Trocar para o real deve ser uma linha.
-
----
-
-## Regras de negócio (resumo)
-
-| Tipo | Quantidade | Prazo | Preço |
-|---|---|---|---|
-| Avulso | 1 a 49 doces | No mesmo dia se pedido antes do corte (14h), senão a partir de amanhã | Soma dos preços unitários |
-| Caixa de 50 | Exatamente 50, sabores à escolha | A partir de 5 dias; limite de caixas por dia | Preço fixo da caixa (a confirmar com o cliente) |
-| Festa | Orçamento | Evento a partir de 5 dias | Combinado pelo WhatsApp |
-
-- **Entrega:** retirada grátis no Centro ou taxa fixa por bairro (3 zonas). Frete cortesia a partir de R$ 250.
-- **Agenda:** até 30 dias à frente. Dia com o limite de Caixas de 50 atingido some da lista (caixa cancelada libera a vaga). Dois clientes pegando a última vaga ao mesmo tempo: só um consegue.
-- **Status do pedido:** Recebido → Fazendo → Pronto → Saiu → Entregue (retirada pula o "Saiu"). Dá para voltar um passo (o "Desfazer", inclusive depois de cancelar) e cancelar qualquer pedido ainda não entregue.
-- **Pagamento:** Pix (BR Code). Cartão via gateway na fase 2. Nunca guardamos dados de cartão.
-- **Cadastro:** só nome e WhatsApp, com aceite do aviso de privacidade. Sem CPF.
-- **Sabor esgotado:** marcado no painel, some do pedido no site na hora.
-
-**Todos os valores atuais (preços, bairros, taxas, limites, Pix) são fictícios** até o cliente passar os reais. Ficam na tabela `config` e no seed.
-
----
-
-## Fora do escopo do MVP (fase 2)
-
-Cartão de crédito (Mercado Pago), histórico de pedidos e recompra, impressora térmica de comandas, envio automático pelo WhatsApp, banco online (Supabase ou similar), Google Meu Negócio, edição de bairros e configurações pelo painel.
